@@ -9,19 +9,19 @@
     {
       "name": "Aaditi Sharma",
       "enrollment_no": "2501010688",
-      "github": ""
+      "github": "sharmaaaditi"
     },
     {
       "name": "Utkarsh Jain",
       "enrollment_no": "2501010605",
-      "github": ""
+      "github": "utkarsh-x-jain"
     },
     {
       "name": "Shambhavi Shukla",
       "enrollment_no": "2501010585",
-      "github": ""
+      "github": "shambhavis25585-afk"
     }
   ],
-  "postgres_version": "",
-  "laptop_used_for_benchmarks": ""
+  "postgres_version": "15.18 (Homebrew, arm64 macOS)",
+  "laptop_used_for_benchmarks": "Apple MacBook Pro (Mac16,1), arm64; local PostgreSQL 15.18; database sc_disruption_t0124_seed_20261103"
 }

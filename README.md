@@ -22,12 +22,16 @@
 
 | Role | Name | Enrollment No. | GitHub Username |
 |------|------|----------------|-----------------|
-| Group Lead | | | |
-| Member 2 | | | |
-| Member 3 | | | |
-| Member 4 | | | |
+| Group Lead | Hridey Marwah | 2501010673 | hrideymarwah15 |
+| Member 2 | Aaditi Sharma | 2501010688 | Pending confirmation |
+| Member 3 | Utkarsh Jain | 2501010605 | Pending confirmation |
+| Member 4 | Shambhavi Shukla | 2501010585 | Pending confirmation |
 
-**Team No.:** ____ · **Section:** ____ · **Repository URL:** ____
+**Team No.:** T0124 · **Team:** SC-Disruption · **Section:** B · **Mentor:** Ritesh
+
+**Repository URL:** https://github.com/hrideymarwah15/DE_Project_2026
+
+Roster source: course tracker, 3 November 2026. Shambhavi is listed in Section E; the team is listed in Section B. Empty fields in `team.json` are unconfirmed, not completed. Collaborator invitations await the three members' exact GitHub usernames. PostgreSQL version and benchmark laptop will be recorded when measurements are taken.
 
 ---
 

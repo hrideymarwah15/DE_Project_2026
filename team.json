@@ -1,0 +1,27 @@
+{
+  "team_number": "T0124",
+  "group_lead": {
+    "name": "Hridey Marwah",
+    "enrollment_no": "2501010673",
+    "github": "hrideymarwah15"
+  },
+  "members": [
+    {
+      "name": "Aaditi Sharma",
+      "enrollment_no": "2501010688",
+      "github": ""
+    },
+    {
+      "name": "Utkarsh Jain",
+      "enrollment_no": "2501010605",
+      "github": ""
+    },
+    {
+      "name": "Shambhavi Shukla",
+      "enrollment_no": "2501010585",
+      "github": ""
+    }
+  ],
+  "postgres_version": "",
+  "laptop_used_for_benchmarks": ""
+}

@@ -1,0 +1,93 @@
+erDiagram
+    USERS ||--o{ DEVICES : owns
+    USERS ||--o{ CHATS : creates
+    USERS ||--o{ CHAT_MEMBERS : joins
+    CHATS ||--o{ CHAT_MEMBERS : contains
+    USERS ||--o{ MEDIA : uploads
+    CHATS ||--o{ MESSAGES : contains
+    USERS ||--o{ MESSAGES : sends
+    MEDIA o|--o{ MESSAGES : attaches
+    MESSAGES o|--o{ MESSAGES : parent_of
+    MESSAGES ||--o{ MESSAGE_RECEIPTS : has
+    USERS ||--o{ MESSAGE_RECEIPTS : receives
+    CHATS ||--o{ CALLS : hosts
+    USERS ||--o{ CALLS : initiates
+    USERS ||--o{ BLOCKED_USERS : blocker
+    USERS ||--o{ BLOCKED_USERS : blocked
+
+    USERS {
+        bigint user_id PK
+        text phone_e164 UK
+        text display_name
+        text about
+        boolean is_business
+        date joined_on
+        timestamptz last_seen_at
+        text status
+    }
+    DEVICES {
+        bigint device_id PK
+        bigint user_id FK
+        text device_type
+        text app_version
+        timestamptz registered_at
+        timestamptz last_active_at
+    }
+    CHATS {
+        bigint chat_id PK
+        text chat_type
+        text group_name
+        bigint created_by FK
+        timestamptz created_at
+    }
+    CHAT_MEMBERS {
+        bigint chat_id PK,FK
+        bigint user_id PK,FK
+        text role
+        timestamptz joined_at
+        timestamptz left_at
+        boolean is_muted
+    }
+    MEDIA {
+        bigint media_id PK
+        bigint uploader_id FK
+        text media_type
+        text mime_type
+        bigint size_bytes
+        text sha256
+        timestamptz uploaded_at
+    }
+    MESSAGES {
+        bigint message_id PK
+        bigint chat_id FK
+        bigint sender_id FK
+        timestamptz sent_at
+        text message_type
+        text body
+        bigint media_id FK
+        bigint reply_to_message_id FK
+        boolean is_forwarded
+        boolean is_deleted
+        timestamptz edited_at
+    }
+    MESSAGE_RECEIPTS {
+        bigint message_id PK,FK
+        bigint user_id PK,FK
+        timestamptz delivered_at
+        timestamptz read_at
+    }
+    CALLS {
+        bigint call_id PK
+        bigint chat_id FK
+        bigint caller_id FK
+        text call_type
+        timestamptz started_at
+        timestamptz answered_at
+        timestamptz ended_at
+        text status
+    }
+    BLOCKED_USERS {
+        bigint blocker_id PK,FK
+        bigint blocked_id PK,FK
+        timestamptz blocked_at
+    }

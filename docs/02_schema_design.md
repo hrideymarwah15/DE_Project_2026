@@ -188,6 +188,49 @@ members in every future direct chat or a reply staying within the same chat
 cannot be enforced with an ordinary row CHECK; application transactions or
 future constraint triggers should enforce them.
 
+### Queries used for the integrity review
+
+The zero-violation results above are reproducible with these checks:
+
+    SELECT count(*) AS sender_without_membership
+    FROM whatsapp.messages m
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM whatsapp.chat_members cm
+        WHERE cm.chat_id = m.chat_id
+          AND cm.user_id = m.sender_id
+    );
+
+    SELECT count(*) AS reply_in_different_chat
+    FROM whatsapp.messages child
+    JOIN whatsapp.messages parent
+      ON parent.message_id = child.reply_to_message_id
+    WHERE child.chat_id <> parent.chat_id;
+
+    SELECT count(*) AS direct_chat_member_count_not_two
+    FROM (
+        SELECT c.chat_id
+        FROM whatsapp.chats c
+        LEFT JOIN whatsapp.chat_members cm ON cm.chat_id = c.chat_id
+        WHERE c.chat_type = 'DIRECT'
+        GROUP BY c.chat_id
+        HAVING count(cm.user_id) <> 2
+    ) AS invalid_direct_chats;
+
+    SELECT count(*) AS receipt_read_before_message_sent
+    FROM whatsapp.message_receipts r
+    JOIN whatsapp.messages m USING (message_id)
+    WHERE r.read_at < m.sent_at;
+
+    SELECT count(*) AS media_message_type_mismatch
+    FROM whatsapp.messages m
+    JOIN whatsapp.media md USING (media_id)
+    WHERE m.message_type <> md.media_type;
+
+The diagram uses crow's-foot cardinality. A circle means optional/zero, a bar
+means one, and the fork means many. The two associative relations
+chat_members and message_receipts resolve the two many-to-many relationships.
+
 ## Functional dependencies and normal forms
 
 | Relation | Main functional dependencies | Normal-form conclusion |

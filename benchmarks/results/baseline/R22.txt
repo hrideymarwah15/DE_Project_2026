@@ -1,0 +1,27 @@
+=== R22 run 1 ===
+Limit  (cost=3831.96..3832.92 rows=25 width=37) (actual time=15.726..15.732 rows=25 loops=1)
+  Buffers: shared hit=1816
+  ->  Index Scan Backward using messages_pkey on messages  (cost=0.29..4598.29 rows=120000 width=37) (actual time=0.017..12.414 rows=100025 loops=1)
+        Buffers: shared hit=1816
+Planning:
+  Buffers: shared hit=74
+Planning Time: 0.273 ms
+Execution Time: 15.751 ms
+=== R22 run 2 ===
+Limit  (cost=3831.96..3832.92 rows=25 width=37) (actual time=15.975..15.980 rows=25 loops=1)
+  Buffers: shared hit=1816
+  ->  Index Scan Backward using messages_pkey on messages  (cost=0.29..4598.29 rows=120000 width=37) (actual time=0.015..12.786 rows=100025 loops=1)
+        Buffers: shared hit=1816
+Planning:
+  Buffers: shared hit=74
+Planning Time: 0.246 ms
+Execution Time: 15.999 ms
+=== R22 run 3 ===
+Limit  (cost=3831.96..3832.92 rows=25 width=37) (actual time=16.220..16.224 rows=25 loops=1)
+  Buffers: shared hit=1816
+  ->  Index Scan Backward using messages_pkey on messages  (cost=0.29..4598.29 rows=120000 width=37) (actual time=0.017..13.027 rows=100025 loops=1)
+        Buffers: shared hit=1816
+Planning:
+  Buffers: shared hit=74
+Planning Time: 0.265 ms
+Execution Time: 16.245 ms

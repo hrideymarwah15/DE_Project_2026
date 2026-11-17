@@ -1,0 +1,36 @@
+=== R13 run 1 ===
+Seq Scan on messages m  (cost=2975.00..6550.00 rows=1 width=44) (actual time=40.739..40.740 rows=0 loops=1)
+  Filter: ((body ~~ '%?%'::text) AND (NOT (hashed SubPlan 1)) AND (chat_id = 20501))
+  Rows Removed by Filter: 120000
+  Buffers: shared hit=2950
+  SubPlan 1
+    ->  Seq Scan on messages r  (cost=0.00..2675.00 rows=120000 width=8) (actual time=0.002..11.267 rows=120000 loops=1)
+          Buffers: shared hit=1475
+Planning:
+  Buffers: shared hit=75
+Planning Time: 0.291 ms
+Execution Time: 40.800 ms
+=== R13 run 2 ===
+Seq Scan on messages m  (cost=2975.00..6550.00 rows=1 width=44) (actual time=42.156..42.157 rows=0 loops=1)
+  Filter: ((body ~~ '%?%'::text) AND (NOT (hashed SubPlan 1)) AND (chat_id = 20501))
+  Rows Removed by Filter: 120000
+  Buffers: shared hit=2950
+  SubPlan 1
+    ->  Seq Scan on messages r  (cost=0.00..2675.00 rows=120000 width=8) (actual time=0.002..11.876 rows=120000 loops=1)
+          Buffers: shared hit=1475
+Planning:
+  Buffers: shared hit=75
+Planning Time: 0.310 ms
+Execution Time: 42.218 ms
+=== R13 run 3 ===
+Seq Scan on messages m  (cost=2975.00..6550.00 rows=1 width=44) (actual time=40.255..40.259 rows=0 loops=1)
+  Filter: ((body ~~ '%?%'::text) AND (NOT (hashed SubPlan 1)) AND (chat_id = 20501))
+  Rows Removed by Filter: 120000
+  Buffers: shared hit=2950
+  SubPlan 1
+    ->  Seq Scan on messages r  (cost=0.00..2675.00 rows=120000 width=8) (actual time=0.002..11.041 rows=120000 loops=1)
+          Buffers: shared hit=1475
+Planning:
+  Buffers: shared hit=75
+Planning Time: 0.290 ms
+Execution Time: 40.326 ms

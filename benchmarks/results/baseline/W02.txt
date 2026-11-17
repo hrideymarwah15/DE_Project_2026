@@ -1,0 +1,54 @@
+=== W02 run 1 ===
+Update on message_receipts r  (cost=0.42..3044.83 rows=0 width=0) (actual time=14.997..14.998 rows=0 loops=1)
+  Buffers: shared hit=1751 dirtied=30
+  ->  Nested Loop  (cost=0.42..3044.83 rows=1 width=28) (actual time=0.214..14.386 rows=14 loops=1)
+        Buffers: shared hit=1613
+        ->  Seq Scan on messages m  (cost=0.00..2975.00 rows=8 width=14) (actual time=0.164..13.690 rows=34 loops=1)
+              Filter: (chat_id = 22556)
+              Rows Removed by Filter: 119966
+              Buffers: shared hit=1475
+        ->  Index Scan using message_receipts_pkey on message_receipts r  (cost=0.42..8.44 rows=1 width=22) (actual time=0.020..0.020 rows=0 loops=34)
+              Index Cond: ((message_id = m.message_id) AND (user_id = 965))
+              Filter: (read_at IS NULL)
+              Rows Removed by Filter: 1
+              Buffers: shared hit=138
+Planning:
+  Buffers: shared hit=218
+Planning Time: 1.923 ms
+Execution Time: 15.221 ms
+=== W02 run 2 ===
+Update on message_receipts r  (cost=0.42..3044.83 rows=0 width=0) (actual time=10.955..10.956 rows=0 loops=1)
+  Buffers: shared hit=1750
+  ->  Nested Loop  (cost=0.42..3044.83 rows=1 width=28) (actual time=0.141..10.675 rows=14 loops=1)
+        Buffers: shared hit=1613
+        ->  Seq Scan on messages m  (cost=0.00..2975.00 rows=8 width=14) (actual time=0.111..10.168 rows=34 loops=1)
+              Filter: (chat_id = 22556)
+              Rows Removed by Filter: 119966
+              Buffers: shared hit=1475
+        ->  Index Scan using message_receipts_pkey on message_receipts r  (cost=0.42..8.44 rows=1 width=22) (actual time=0.014..0.014 rows=0 loops=34)
+              Index Cond: ((message_id = m.message_id) AND (user_id = 965))
+              Filter: (read_at IS NULL)
+              Rows Removed by Filter: 1
+              Buffers: shared hit=138
+Planning:
+  Buffers: shared hit=219
+Planning Time: 1.150 ms
+Execution Time: 11.104 ms
+=== W02 run 3 ===
+Update on message_receipts r  (cost=0.42..3044.83 rows=0 width=0) (actual time=9.175..9.175 rows=0 loops=1)
+  Buffers: shared hit=1759 dirtied=4 written=1
+  ->  Nested Loop  (cost=0.42..3044.83 rows=1 width=28) (actual time=0.148..8.593 rows=14 loops=1)
+        Buffers: shared hit=1613
+        ->  Seq Scan on messages m  (cost=0.00..2975.00 rows=8 width=14) (actual time=0.102..8.231 rows=34 loops=1)
+              Filter: (chat_id = 22556)
+              Rows Removed by Filter: 119966
+              Buffers: shared hit=1475
+        ->  Index Scan using message_receipts_pkey on message_receipts r  (cost=0.42..8.44 rows=1 width=22) (actual time=0.010..0.010 rows=0 loops=34)
+              Index Cond: ((message_id = m.message_id) AND (user_id = 965))
+              Filter: (read_at IS NULL)
+              Rows Removed by Filter: 1
+              Buffers: shared hit=138
+Planning:
+  Buffers: shared hit=219
+Planning Time: 1.344 ms
+Execution Time: 9.319 ms

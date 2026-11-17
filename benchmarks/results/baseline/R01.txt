@@ -1,0 +1,90 @@
+=== R01 run 1 ===
+Sort  (cost=11136.55..11136.56 rows=3 width=58) (actual time=44.799..44.800 rows=4 loops=1)
+  Sort Key: m.sent_at DESC
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=6795
+  ->  Nested Loop  (cost=2975.33..11136.53 rows=3 width=58) (actual time=19.876..44.736 rows=4 loops=1)
+        Buffers: shared hit=6792
+        ->  Nested Loop  (cost=0.29..2211.34 rows=3 width=30) (actual time=7.263..12.819 rows=4 loops=1)
+              Buffers: shared hit=892
+              ->  Seq Scan on chat_members cm  (cost=0.00..2186.43 rows=3 width=8) (actual time=7.235..12.716 rows=4 loops=1)
+                    Filter: ((left_at IS NULL) AND (user_id = 965))
+                    Rows Removed by Filter: 104510
+                    Buffers: shared hit=880
+              ->  Index Scan using chats_pkey on chats c  (cost=0.29..8.30 rows=1 width=30) (actual time=0.020..0.020 rows=1 loops=4)
+                    Index Cond: (chat_id = cm.chat_id)
+                    Buffers: shared hit=12
+        ->  Limit  (cost=2975.04..2975.04 rows=1 width=28) (actual time=7.975..7.975 rows=1 loops=4)
+              Buffers: shared hit=5900
+              ->  Sort  (cost=2975.04..2975.06 rows=8 width=28) (actual time=7.971..7.971 rows=1 loops=4)
+                    Sort Key: m.sent_at DESC
+                    Sort Method: top-N heapsort  Memory: 25kB
+                    Buffers: shared hit=5900
+                    ->  Seq Scan on messages m  (cost=0.00..2975.00 rows=8 width=28) (actual time=1.198..7.949 rows=20 loops=4)
+                          Filter: (chat_id = cm.chat_id)
+                          Rows Removed by Filter: 119980
+                          Buffers: shared hit=5900
+Planning:
+  Buffers: shared hit=240
+Planning Time: 2.499 ms
+Execution Time: 44.904 ms
+=== R01 run 2 ===
+Sort  (cost=11136.55..11136.56 rows=3 width=58) (actual time=30.306..30.308 rows=4 loops=1)
+  Sort Key: m.sent_at DESC
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=6795
+  ->  Nested Loop  (cost=2975.33..11136.53 rows=3 width=58) (actual time=9.157..30.287 rows=4 loops=1)
+        Buffers: shared hit=6792
+        ->  Nested Loop  (cost=0.29..2211.34 rows=3 width=30) (actual time=2.225..6.481 rows=4 loops=1)
+              Buffers: shared hit=892
+              ->  Seq Scan on chat_members cm  (cost=0.00..2186.43 rows=3 width=8) (actual time=2.219..6.447 rows=4 loops=1)
+                    Filter: ((left_at IS NULL) AND (user_id = 965))
+                    Rows Removed by Filter: 104510
+                    Buffers: shared hit=880
+              ->  Index Scan using chats_pkey on chats c  (cost=0.29..8.30 rows=1 width=30) (actual time=0.007..0.007 rows=1 loops=4)
+                    Index Cond: (chat_id = cm.chat_id)
+                    Buffers: shared hit=12
+        ->  Limit  (cost=2975.04..2975.04 rows=1 width=28) (actual time=5.949..5.949 rows=1 loops=4)
+              Buffers: shared hit=5900
+              ->  Sort  (cost=2975.04..2975.06 rows=8 width=28) (actual time=5.948..5.948 rows=1 loops=4)
+                    Sort Key: m.sent_at DESC
+                    Sort Method: top-N heapsort  Memory: 25kB
+                    Buffers: shared hit=5900
+                    ->  Seq Scan on messages m  (cost=0.00..2975.00 rows=8 width=28) (actual time=0.671..5.935 rows=20 loops=4)
+                          Filter: (chat_id = cm.chat_id)
+                          Rows Removed by Filter: 119980
+                          Buffers: shared hit=5900
+Planning:
+  Buffers: shared hit=240
+Planning Time: 0.750 ms
+Execution Time: 30.338 ms
+=== R01 run 3 ===
+Sort  (cost=11136.55..11136.56 rows=3 width=58) (actual time=30.484..30.485 rows=4 loops=1)
+  Sort Key: m.sent_at DESC
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=6795
+  ->  Nested Loop  (cost=2975.33..11136.53 rows=3 width=58) (actual time=9.116..30.464 rows=4 loops=1)
+        Buffers: shared hit=6792
+        ->  Nested Loop  (cost=0.29..2211.34 rows=3 width=30) (actual time=2.220..6.631 rows=4 loops=1)
+              Buffers: shared hit=892
+              ->  Seq Scan on chat_members cm  (cost=0.00..2186.43 rows=3 width=8) (actual time=2.213..6.597 rows=4 loops=1)
+                    Filter: ((left_at IS NULL) AND (user_id = 965))
+                    Rows Removed by Filter: 104510
+                    Buffers: shared hit=880
+              ->  Index Scan using chats_pkey on chats c  (cost=0.29..8.30 rows=1 width=30) (actual time=0.006..0.006 rows=1 loops=4)
+                    Index Cond: (chat_id = cm.chat_id)
+                    Buffers: shared hit=12
+        ->  Limit  (cost=2975.04..2975.04 rows=1 width=28) (actual time=5.957..5.957 rows=1 loops=4)
+              Buffers: shared hit=5900
+              ->  Sort  (cost=2975.04..2975.06 rows=8 width=28) (actual time=5.955..5.955 rows=1 loops=4)
+                    Sort Key: m.sent_at DESC
+                    Sort Method: top-N heapsort  Memory: 25kB
+                    Buffers: shared hit=5900
+                    ->  Seq Scan on messages m  (cost=0.00..2975.00 rows=8 width=28) (actual time=0.607..5.946 rows=20 loops=4)
+                          Filter: (chat_id = cm.chat_id)
+                          Rows Removed by Filter: 119980
+                          Buffers: shared hit=5900
+Planning:
+  Buffers: shared hit=240
+Planning Time: 0.757 ms
+Execution Time: 30.516 ms

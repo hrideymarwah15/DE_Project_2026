@@ -8,10 +8,10 @@ Another member should review every deliverable before the deadline.
 
 | Owner | Work | Status |
 |---|---|---|
-| Hridey | docs/01_problem_understanding.md; coordinate integration and validation | Prepared and verified |
+| Hridey | docs/01_problem_understanding.md; coordinate integration and validation; complete the transferred AP normalization task | Prepared and verified |
 | Aaditi | docs/02_schema_design.md; diagrams/er_diagram.mmd and .svg | Prepared and verified |
 | Shambhavi | sql/01_schema.sql; sql/02_load_data.sql; fresh-database load and integrity checks | Prepared and verified |
-| Utkarsh | AP repo dbms/01_normalization.md for the SC-Disruption app | **Left for Utkarsh** |
+| Utkarsh | Original AP normalization assignment transferred to Hridey | Completed by Hridey in the AP repo |
 
 ## CP2 — baseline timings
 

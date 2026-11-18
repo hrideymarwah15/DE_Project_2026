@@ -1,0 +1,15 @@
+index_name,size_bytes,size_pretty
+idx_calls_missed_started_chat,393216,384 kB
+idx_chat_members_current_user_chat,3121152,3048 kB
+idx_chat_members_user_chat,3317760,3240 kB
+idx_devices_type_last_active,614400,600 kB
+idx_media_sha256_size,2932736,2864 kB
+idx_messages_body_trgm,3645440,3560 kB
+idx_messages_chat_sent_desc,8200192,8008 kB
+idx_messages_forwarded_sender_sent,204800,200 kB
+idx_messages_reply_to,352256,344 kB
+idx_messages_sent_at,2719744,2656 kB
+idx_receipts_pending_message_user,180224,176 kB
+idx_receipts_unread_user_message,4104192,4008 kB
+idx_users_last_seen,1474560,1440 kB
+TOTAL,31260672,30 MB

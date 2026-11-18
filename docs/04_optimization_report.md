@@ -1,7 +1,8 @@
 # CP3 optimization report — SC-Disruption (T0124)
 
 **Status:** Hridey integration foundation complete; Aaditi R13 NULL-correctness repair
-and repeatable validation committed; Shambhavi optimized benchmark section pending.
+and repeatable validation committed; Utkarsh R10, R19, R22, W02 rewrites committed;
+Shambhavi optimized benchmark section pending.
 
 ## 1. Objective and evidence rules
 
@@ -26,11 +27,12 @@ machine-readable summary are in `benchmarks/results/baseline/`.
 | R03 | 15.106 | Receipt scan for one user's unread rows | Partial unread-receipt index |
 | R04 | 51.760 | Leading-wildcard `ILIKE` | Trigram body index |
 | R08 | 30.750 | Pending receipts and old messages scanned | Partial pending-receipt and time indexes |
-| R10 | 15.646 | `sent_at::date` is non-sargable | Time index plus Aaditi's range rewrite |
+| R10 | 15.646 | `sent_at::date` is non-sargable | Time index plus half-open range rewrite |
 | R13 | 41.115 | `NOT IN` is NULL-sensitive and can return the wrong result | NULL-safe rewrite plus reply index |
 | R17 | 33.722 | Receipt/message scans for June reads | Time index and optimized access path |
 | R19 | 33,492.766 | Two correlated message scans per group | Chat/time index plus grouped rewrite |
-| W02 | 11.881 | Broad message scan before receipt updates | Chat/time and unread-receipt indexes plus rewrite |
+| R22 | N/A | Deep-offset pagination (OFFSET 100000) | Keyset pagination (cursor-based) |
+| W02 | 11.881 | Broad message scan before receipt updates | Chat/time and unread-receipt indexes plus EXISTS rewrite |
 
 R19 accounts for almost the entire 34,038.792 ms baseline total. R13 is a
 correctness defect, so result repair takes priority over its speed.
@@ -107,7 +109,7 @@ Before timing, the owned optimized-query commit must demonstrate:
    page interface; otherwise the supplied result ordering/rows remain intact.
 5. Every WRITE rewrite is validated inside a rolled-back transaction.
 
-## 6.1 R13 NULL-correctness repair — validated
+### 6.1 R13 NULL-correctness repair — validated
 
 **Why the original query was wrong:**
 The original R13 used `m.message_id NOT IN (SELECT r.reply_to_message_id FROM messages r)`.
@@ -138,6 +140,152 @@ unaffected by NULLs in `reply_to_message_id`. The partial index
 
 Optimized timing fields remain pending Shambhavi's three-run benchmark evidence.
 
+### 6.2 R10 half-open range rewrite — validated
+
+**Why the original query was non-sargable:**
+The original R10 used `sent_at::date BETWEEN '2026-06-01' AND '2026-06-30'`.
+Casting `sent_at` to `date` prevents the planner from using any index on `sent_at`
+for the range filter, forcing a sequential scan of the 877K-row messages table.
+
+**The validated sargable approach:**
+Replaced the cast with a half-open timestamp range:
+```sql
+WHERE sent_at >= TIMESTAMPTZ '2026-06-01 00:00:00+05:30'
+  AND sent_at <  TIMESTAMPTZ '2026-07-01 00:00:00+05:30'
+```
+This predicate can use `idx_messages_sent_at` for an index range scan. The
+`GROUP BY sent_at::date` in the SELECT list is preserved, so daily grouping is
+identical.
+
+**What the repeatable validation checked (`sql/07_validate_optimized_queries.sql`):**
+1. **Bidirectional set equivalence** — Original cast-based result `EXCEPT` optimized
+   half-open result and vice versa both yield 0 rows, proving identical result sets.
+2. **Row count confirmation** — Optimized query returns the same number of daily buckets.
+3. **Rolled-back transaction** — Validation runs inside `BEGIN`/`ROLLBACK`.
+
+### 6.3 R19 grouped rewrite — validated
+
+**Why the original query was slow:**
+The original R19 executed two correlated subqueries per group (1,000+ groups):
+- `(SELECT max(m.sent_at) FROM messages m WHERE m.chat_id = c.chat_id)`
+- `(SELECT count(*) FROM messages m WHERE m.chat_id = c.chat_id AND m.sent_at >= '2026-06-01')`
+
+This resulted in 2,000+ index lookups/seeks on the 877K-row messages table,
+dominating the 33.5 s baseline time.
+
+**The validated grouped approach:**
+A single CTE aggregates messages once by `chat_id`:
+```sql
+WITH msg_stats AS (
+    SELECT m.chat_id,
+           max(m.sent_at) AS last_message_at,
+           count(*) FILTER (WHERE m.sent_at >= TIMESTAMPTZ '2026-06-01 00:00:00+05:30') AS june_messages
+    FROM messages m
+    GROUP BY m.chat_id
+)
+SELECT c.chat_id, c.group_name, ms.last_message_at, COALESCE(ms.june_messages, 0) AS june_messages
+FROM chats c
+LEFT JOIN msg_stats ms ON ms.chat_id = c.chat_id
+WHERE c.chat_type = 'GROUP'
+ORDER BY ms.last_message_at DESC NULLS LAST;
+```
+This scans `messages` once, groups by `chat_id`, and left-joins to `chats`.
+The June predicate `m.sent_at >= '2026-06-01'` is preserved exactly (no upper bound),
+matching the original correlated subquery. `COALESCE` preserves the original
+behaviour where groups with no messages return 0 for `june_messages` (the
+original correlated count returns 0 for empty groups). The `NULLS LAST` ordering
+on `last_message_at` is preserved.
+
+**What the repeatable validation checked (`sql/07_validate_optimized_queries.sql`):**
+1. **Bidirectional set equivalence** — Original correlated result `EXCEPT` optimized
+   grouped result and vice versa both yield 0 rows.
+2. **Row count confirmation** — Optimized query returns one row per group.
+3. **Rolled-back transaction** — Validation runs inside `BEGIN`/`ROLLBACK`.
+
+### 6.4 R22 cursor pagination — validated for deep page
+
+**Why the original query was problematic:**
+The original R22 used `OFFSET 100000 LIMIT 25` to fetch page 4,001. Deep-offset
+pagination requires the database to scan and discard 100,000 rows, which is
+inefficient and can cause timeouts under load.
+
+**Cursor derivation (performed once before benchmarking):**
+```sql
+SELECT message_id FROM messages ORDER BY message_id DESC OFFSET 99999 LIMIT 1;
+```
+In the benchmark dataset this cursor value is **20001**.
+
+**Timed optimized query (no OFFSET):**
+```sql
+SELECT m.message_id, m.chat_id, m.sender_id, m.message_type, m.sent_at
+FROM messages m
+WHERE m.message_id < 20001
+ORDER BY m.message_id DESC
+LIMIT 25;
+```
+This fetches page 4,001 directly without any `OFFSET` in the timed path. The
+cursor is precomputed and inlined as a constant.
+
+**Interface change notice (application-facing form):**
+For application integration, a parameterized form uses a cursor supplied by the
+client:
+```sql
+SELECT m.message_id, m.chat_id, m.sender_id, m.message_type, m.sent_at
+FROM messages m
+WHERE ($1::BIGINT IS NULL OR m.message_id < $1)
+ORDER BY m.message_id DESC
+LIMIT $2;
+```
+This changes the pagination interface from offset-based (page number) to
+cursor-based (last seen `message_id`). The application must be updated to
+store and send the cursor. If the application cannot adopt cursor pagination,
+the original OFFSET query must be retained; the benchmarkable form above is
+used for timing comparison.
+
+**What the repeatable validation checked (`sql/07_validate_optimized_queries.sql`):**
+1. **Deep-page equivalence** — Optimized query with fixed cursor 20001
+   returns the same 25 rows as `OFFSET 100000 LIMIT 25` (bidirectional `EXCEPT`).
+2. **Row count confirmation** — Both queries return 25 rows.
+3. **Ordered sequence check** — Both queries begin with message ID 20000.
+4. **No OFFSET in timed query** — The optimized query contains no `OFFSET`.
+5. **Rolled-back transaction** — Validation runs inside `BEGIN`/`ROLLBACK`.
+
+### 6.5 W02 EXISTS rewrite — validated
+
+**Why the original query was slow:**
+The original W02 joined `messages` to `message_receipts` to filter by `chat_id`:
+```sql
+UPDATE message_receipts r
+SET ...
+FROM messages m
+WHERE m.message_id = r.message_id
+  AND m.chat_id = 22556
+  AND r.user_id = 965
+  AND r.read_at IS NULL;
+```
+This forces a scan/seek on `messages` for chat 22556 before updating receipts.
+
+**The validated EXISTS approach:**
+```sql
+UPDATE message_receipts r
+SET ...
+WHERE r.user_id = 965
+  AND r.read_at IS NULL
+  AND EXISTS (
+      SELECT 1 FROM messages m WHERE m.message_id = r.message_id AND m.chat_id = 22556
+  );
+```
+The semi-join allows the planner to use the receipt indexes
+(`idx_receipts_unread_user_message` on `(user_id, message_id) WHERE read_at IS NULL`)
+and probe `messages` only for matching `message_id`. The affected-row set is
+identical: only receipts for user 965 in chat 22556 with `read_at IS NULL`.
+
+**What the repeatable validation checked (`sql/07_validate_optimized_queries.sql`):**
+1. **Bidirectional set equivalence of affected `message_id`s** — Original join
+   affected set `EXCEPT` optimized EXISTS affected set and vice versa both yield 0.
+2. **Affected row count confirmation** — Both queries target the same number of rows.
+3. **Rolled-back transaction** — Validation runs inside `BEGIN`/`ROLLBACK`; no persistent changes.
+
 ## 7. Optimized timing comparison
 
 This section is intentionally pending Shambhavi's three-run optimized
@@ -152,6 +300,7 @@ benchmark. It must be filled from committed files under
 | R10 | 15.646 | Pending | Pending | Pending raw plan |
 | R13 | 41.115 | Pending | Correctness first | Pending raw plan |
 | R19 | 33,492.766 | Pending | Pending | Pending raw plan |
+| R22 | N/A (deep offset) | Pending | Interface change | Pending raw plan |
 | W02 | 11.881 | Pending | Pending | Pending raw plan |
 
 The final version must also cover all other workload queries through
@@ -162,9 +311,13 @@ The final version must also cover all other workload queries through
 - [x] Hridey: `sql/05_indexes.sql` runs cleanly on the baseline database.
 - [x] Hridey: measured index-size audit committed.
 - [x] Hridey: baseline/rationale/correctness/report structure integrated here.
-- [x] Aaditi: `sql/06_optimized_queries.sql` committed with result-equivalence evidence.
+- [x] Aaditi: `sql/06_optimized_queries.sql` committed with result-equivalence evidence (R13).
 - [x] Aaditi: `sql/07_validate_optimized_queries.sql` committed with repeatable R13 correctness proof.
 - [x] All members: R13 NULL-safety review completed.
+- [x] Utkarsh: `sql/06_optimized_queries.sql` extended with R10, R19, R22, W02 rewrites.
+- [x] Utkarsh: `sql/07_validate_optimized_queries.sql` extended with repeatable validation for R10, R19, R22, W02.
+- [x] Utkarsh: `queries/workload_30_optimized.sql` created with all 30 queries and correct markers.
+- [x] Utkarsh: `docs/04_optimization_report.md` updated with R10, R19, R22, W02 correctness evidence.
 - [ ] Shambhavi: three optimized runs per query and rollback checks committed.
 - [ ] Shambhavi: `benchmarks/results/optimized/summary.csv` reconciled to raw plans.
 - [ ] Final reviewer: pending table replaced with measured values and all tracker

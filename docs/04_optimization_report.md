@@ -1,7 +1,7 @@
 # CP3 optimization report — SC-Disruption (T0124)
 
-**Status:** Hridey integration foundation complete; optimized query and measured
-benchmark sections remain pending their owned Aaditi and Shambhavi commits.
+**Status:** Hridey integration foundation complete; Aaditi R13 NULL-correctness repair
+and repeatable validation committed; Shambhavi optimized benchmark section pending.
 
 ## 1. Objective and evidence rules
 
@@ -107,6 +107,37 @@ Before timing, the owned optimized-query commit must demonstrate:
    page interface; otherwise the supplied result ordering/rows remain intact.
 5. Every WRITE rewrite is validated inside a rolled-back transaction.
 
+## 6.1 R13 NULL-correctness repair — validated
+
+**Why the original query was wrong:**
+The original R13 used `m.message_id NOT IN (SELECT r.reply_to_message_id FROM messages r)`.
+When `reply_to_message_id` contains NULLs (105,090 rows in the seed data), the `NOT IN`
+predicate evaluates to `UNKNOWN` for every candidate row, suppressing all valid results.
+The original query returned 0 rows instead of the intended 7 unanswered questions.
+
+**The validated NULL-safe approach:**
+Replaced `NOT IN` with a correlated `NOT EXISTS` anti-join:
+```sql
+AND NOT EXISTS (
+    SELECT 1 FROM messages r WHERE r.reply_to_message_id = m.message_id
+)
+```
+`NOT EXISTS` is NULL-safe — it returns TRUE only when no matching row exists, and is
+unaffected by NULLs in `reply_to_message_id`. The partial index
+`idx_messages_reply_to` (WHERE `reply_to_message_id IS NOT NULL`) supports this subquery.
+
+**What the repeatable validation checked (`sql/07_validate_optimized_queries.sql`):**
+1. **NULL presence confirmed** — 105,090 messages have `reply_to_message_id IS NULL`.
+2. **Bidirectional set equivalence** — `NOT EXISTS` result `EXCEPT` `LEFT JOIN ... IS NULL`
+   and vice versa both yield 0 rows, proving identical result sets.
+3. **Semantic invariant** — No returned message has an actual reply (`reply_count = 0` for all 7).
+4. **Rolled-back transaction** — Validation runs inside `BEGIN`/`ROLLBACK`; persistent data unchanged.
+5. **Explicit failure on violation** — A `DO` block raises `EXCEPTION` if any check is non-zero.
+
+**Real observed result count:** 7 messages in group 20501 containing `?` with no replies.
+
+Optimized timing fields remain pending Shambhavi's three-run benchmark evidence.
+
 ## 7. Optimized timing comparison
 
 This section is intentionally pending Shambhavi's three-run optimized
@@ -131,8 +162,9 @@ The final version must also cover all other workload queries through
 - [x] Hridey: `sql/05_indexes.sql` runs cleanly on the baseline database.
 - [x] Hridey: measured index-size audit committed.
 - [x] Hridey: baseline/rationale/correctness/report structure integrated here.
-- [ ] Aaditi: `sql/06_optimized_queries.sql` committed with result-equivalence evidence.
-- [ ] All members: R13 NULL-safety review completed.
+- [x] Aaditi: `sql/06_optimized_queries.sql` committed with result-equivalence evidence.
+- [x] Aaditi: `sql/07_validate_optimized_queries.sql` committed with repeatable R13 correctness proof.
+- [x] All members: R13 NULL-safety review completed.
 - [ ] Shambhavi: three optimized runs per query and rollback checks committed.
 - [ ] Shambhavi: `benchmarks/results/optimized/summary.csv` reconciled to raw plans.
 - [ ] Final reviewer: pending table replaced with measured values and all tracker

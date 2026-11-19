@@ -1,0 +1,31 @@
+query_id,type,avg_ms,median_ms,min_ms,max_ms,scan_nodes
+R01,READ,0.377,0.353,0.346,0.432,Index Only Scan using idx_chat_members_current_user_chat on chat_members | Index Scan using chats_pkey on chats | Index Scan using idx_messages_chat_sent_desc on messages
+R02,READ,0.334,0.319,0.222,0.461,Bitmap Heap Scan on messages | Bitmap Index Scan on idx_messages_chat_sent_desc
+R03,READ,0.410,0.421,0.337,0.472,Index Only Scan using idx_receipts_unread_user_message on message_receipts | Index Scan using messages_pkey on messages
+R04,READ,0.510,0.526,0.460,0.543,Index Only Scan using idx_chat_members_user_chat on chat_members | Bitmap Heap Scan on messages | Bitmap Index Scan on idx_messages_chat_sent_desc
+R05,READ,0.081,0.092,0.047,0.105,Index Scan using users_phone_e164_key on users
+R06,READ,0.470,0.384,0.326,0.699,Index Only Scan using idx_chat_members_user_chat on chat_members | Index Only Scan using chat_members_pkey on chat_members | Index Scan using chats_pkey on chats | Index Scan using users_pkey on users
+R07,READ,0.454,0.445,0.360,0.556,Index Scan using chat_members_pkey on chat_members | Index Scan using users_pkey on users
+R08,READ,14.875,14.227,12.950,17.449,Index Scan using idx_messages_sent_at on messages | Index Only Scan using idx_receipts_pending_message_user on message_receipts
+R09,READ,21.742,20.352,18.611,26.263,Seq Scan on media
+R10,READ,3.040,2.998,2.958,3.164,Index Scan using idx_messages_sent_at on messages
+R11,READ,3.112,2.977,2.925,3.433,Index Only Scan using idx_calls_missed_started_chat on calls | Index Only Scan using idx_chat_members_user_chat on chat_members
+R12,READ,5.617,5.494,5.489,5.867,Index Only Scan using idx_messages_forwarded_sender_sent on messages
+R13,READ,0.331,0.342,0.284,0.368,Bitmap Heap Scan on messages | Bitmap Index Scan on idx_messages_chat_sent_desc | Index Only Scan using idx_messages_reply_to on messages
+R14,READ,9.869,9.578,9.300,10.730,Index Scan using idx_messages_sent_at on messages | Seq Scan on chats
+R15,READ,0.113,0.104,0.104,0.131,Index Only Scan using blocked_users_pkey on blocked_users
+R16,READ,0.327,0.336,0.288,0.358,Index Scan using message_receipts_pkey on message_receipts | Index Scan using users_pkey on users
+R17,READ,32.822,29.561,28.899,40.006,Seq Scan on message_receipts | Index Scan using idx_messages_sent_at on messages
+R18,READ,25.497,25.563,24.974,25.953,Index Only Scan using idx_users_last_seen on users | Seq Scan on chat_members | Seq Scan on chats
+R19,READ,31.426,31.279,30.774,32.225,Seq Scan on messages | Seq Scan on chats
+R20,READ,97.045,97.136,96.775,97.224,Seq Scan on messages
+R21,READ,25.212,25.237,25.074,25.326,Seq Scan on messages
+R22,READ,0.048,0.048,0.045,0.050,Index Scan using messages_pkey on messages
+R23,READ,3.061,2.954,2.808,3.422,Index Only Scan using idx_devices_type_last_active on devices
+R24,READ,18.390,16.784,16.335,22.052,Seq Scan on media
+R25,READ,0.175,0.193,0.122,0.209,Index Scan using messages_pkey on messages
+W01,WRITE,5.670,5.712,4.926,6.372,(no scan)
+W02,WRITE,1.262,1.273,1.229,1.285,Bitmap Heap Scan on messages | Bitmap Index Scan on idx_messages_chat_sent_desc | Bitmap Heap Scan on message_receipts | Bitmap Index Scan on idx_receipts_unread_user_message
+W03,WRITE,2.986,2.796,2.599,3.564,Index Scan using messages_pkey on messages
+W04,WRITE,62.309,59.613,57.208,70.105,(no scan)
+W05,WRITE,0.270,0.264,0.262,0.285,Index Scan using idx_chat_members_user_chat on chat_members

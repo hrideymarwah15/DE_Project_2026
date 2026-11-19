@@ -1,0 +1,51 @@
+=== R24 run 1 ===
+Sort  (cost=1902.61..1922.96 rows=8140 width=105) (actual time=21.749..21.751 rows=48 loops=1)
+  Sort Key: (count(*)) DESC
+  Sort Method: quicksort  Memory: 31kB
+  Buffers: shared hit=527
+  ->  HashAggregate  (cost=1007.60..1373.88 rows=8140 width=105) (actual time=16.551..21.698 rows=48 loops=1)
+        Group Key: sha256
+        Filter: (count(*) > 1)
+        Batches: 1  Memory Usage: 7441kB
+        Rows Removed by Filter: 24371
+        Buffers: shared hit=524
+        ->  Seq Scan on media  (cost=0.00..800.34 rows=27634 width=73) (actual time=0.016..3.151 rows=27634 loops=1)
+              Buffers: shared hit=524
+Planning:
+  Buffers: shared hit=162
+Planning Time: 1.125 ms
+Execution Time: 22.052 ms
+=== R24 run 2 ===
+Sort  (cost=1902.61..1922.96 rows=8140 width=105) (actual time=16.100..16.102 rows=48 loops=1)
+  Sort Key: (count(*)) DESC
+  Sort Method: quicksort  Memory: 31kB
+  Buffers: shared hit=527
+  ->  HashAggregate  (cost=1007.60..1373.88 rows=8140 width=105) (actual time=10.241..16.064 rows=48 loops=1)
+        Group Key: sha256
+        Filter: (count(*) > 1)
+        Batches: 1  Memory Usage: 7441kB
+        Rows Removed by Filter: 24371
+        Buffers: shared hit=524
+        ->  Seq Scan on media  (cost=0.00..800.34 rows=27634 width=73) (actual time=0.011..1.956 rows=27634 loops=1)
+              Buffers: shared hit=524
+Planning:
+  Buffers: shared hit=160
+Planning Time: 0.665 ms
+Execution Time: 16.335 ms
+=== R24 run 3 ===
+Sort  (cost=1902.61..1922.96 rows=8140 width=105) (actual time=16.613..16.619 rows=48 loops=1)
+  Sort Key: (count(*)) DESC
+  Sort Method: quicksort  Memory: 31kB
+  Buffers: shared hit=527
+  ->  HashAggregate  (cost=1007.60..1373.88 rows=8140 width=105) (actual time=10.182..16.588 rows=48 loops=1)
+        Group Key: sha256
+        Filter: (count(*) > 1)
+        Batches: 1  Memory Usage: 7441kB
+        Rows Removed by Filter: 24371
+        Buffers: shared hit=524
+        ->  Seq Scan on media  (cost=0.00..800.34 rows=27634 width=73) (actual time=0.005..1.901 rows=27634 loops=1)
+              Buffers: shared hit=524
+Planning:
+  Buffers: shared hit=160
+Planning Time: 0.494 ms
+Execution Time: 16.784 ms

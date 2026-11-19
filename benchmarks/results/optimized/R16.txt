@@ -1,0 +1,51 @@
+=== R16 run 1 ===
+Sort  (cost=67.19..67.20 rows=6 width=36) (actual time=0.202..0.204 rows=6 loops=1)
+  Sort Key: r.read_at
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=28
+  ->  Nested Loop  (cost=0.71..67.11 rows=6 width=36) (actual time=0.078..0.152 rows=6 loops=1)
+        Buffers: shared hit=25
+        ->  Index Scan using message_receipts_pkey on message_receipts r  (cost=0.42..17.28 rows=6 width=24) (actual time=0.053..0.056 rows=6 loops=1)
+              Index Cond: (message_id = 119989)
+              Buffers: shared hit=7
+        ->  Index Scan using users_pkey on users u  (cost=0.29..8.30 rows=1 width=20) (actual time=0.014..0.014 rows=1 loops=6)
+              Index Cond: (user_id = r.user_id)
+              Buffers: shared hit=18
+Planning:
+  Buffers: shared hit=295
+Planning Time: 2.110 ms
+Execution Time: 0.288 ms
+=== R16 run 2 ===
+Sort  (cost=67.19..67.20 rows=6 width=36) (actual time=0.254..0.256 rows=6 loops=1)
+  Sort Key: r.read_at
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=28
+  ->  Nested Loop  (cost=0.71..67.11 rows=6 width=36) (actual time=0.085..0.202 rows=6 loops=1)
+        Buffers: shared hit=25
+        ->  Index Scan using message_receipts_pkey on message_receipts r  (cost=0.42..17.28 rows=6 width=24) (actual time=0.054..0.058 rows=6 loops=1)
+              Index Cond: (message_id = 119989)
+              Buffers: shared hit=7
+        ->  Index Scan using users_pkey on users u  (cost=0.29..8.30 rows=1 width=20) (actual time=0.021..0.021 rows=1 loops=6)
+              Index Cond: (user_id = r.user_id)
+              Buffers: shared hit=18
+Planning:
+  Buffers: shared hit=295
+Planning Time: 2.302 ms
+Execution Time: 0.336 ms
+=== R16 run 3 ===
+Sort  (cost=67.19..67.20 rows=6 width=36) (actual time=0.262..0.264 rows=6 loops=1)
+  Sort Key: r.read_at
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=28
+  ->  Nested Loop  (cost=0.71..67.11 rows=6 width=36) (actual time=0.095..0.181 rows=6 loops=1)
+        Buffers: shared hit=25
+        ->  Index Scan using message_receipts_pkey on message_receipts r  (cost=0.42..17.28 rows=6 width=24) (actual time=0.064..0.067 rows=6 loops=1)
+              Index Cond: (message_id = 119989)
+              Buffers: shared hit=7
+        ->  Index Scan using users_pkey on users u  (cost=0.29..8.30 rows=1 width=20) (actual time=0.017..0.017 rows=1 loops=6)
+              Index Cond: (user_id = r.user_id)
+              Buffers: shared hit=18
+Planning:
+  Buffers: shared hit=295
+Planning Time: 2.529 ms
+Execution Time: 0.358 ms

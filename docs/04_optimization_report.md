@@ -2,7 +2,7 @@
 
 **Status:** Hridey integration foundation complete; Aaditi R13 NULL-correctness repair
 and repeatable validation committed; Utkarsh R10, R19, R22, W02 rewrites committed;
-Shambhavi optimized benchmark section pending.
+Shambhavi three-run optimized benchmark and evidence reconciliation complete.
 
 ## 1. Objective and evidence rules
 
@@ -288,23 +288,51 @@ identical: only receipts for user 965 in chat 22556 with `read_at IS NULL`.
 
 ## 7. Optimized timing comparison
 
-This section is intentionally pending Shambhavi's three-run optimized
-benchmark. It must be filled from committed files under
-`benchmarks/results/optimized/`, not estimated from planner costs.
+Shambhavi ran every query three times on the same PostgreSQL 15.18 seed-data
+environment used for CP2, after applying `sql/05_indexes.sql`. Raw plans and
+the reconciled summary are committed under `benchmarks/results/optimized/`.
+Every value below is the arithmetic mean of the three raw `Execution Time`
+values; no planner-cost estimate is used.
 
 | Query | Baseline avg (ms) | Optimized avg (ms) | Change | Plan change |
 |---|---:|---:|---:|---|
-| R01 | 35.253 | Pending | Pending | Pending raw plan |
-| R03 | 15.106 | Pending | Pending | Pending raw plan |
-| R04 | 51.760 | Pending | Pending | Pending raw plan |
-| R10 | 15.646 | Pending | Pending | Pending raw plan |
-| R13 | 41.115 | Pending | Correctness first | Pending raw plan |
-| R19 | 33,492.766 | Pending | Pending | Pending raw plan |
-| R22 | N/A (deep offset) | Pending | Interface change | Pending raw plan |
-| W02 | 11.881 | Pending | Pending | Pending raw plan |
+| R01 | 35.253 | 0.377 | 98.9% faster | Membership index plus indexed latest-message lookup |
+| R03 | 15.106 | 0.410 | 97.3% faster | Partial unread-receipt index |
+| R04 | 51.760 | 0.510 | 99.0% faster | Indexed membership and chat-message access |
+| R10 | 15.646 | 3.040 | 80.6% faster | Sargable time range uses `idx_messages_sent_at` |
+| R13 | 41.115 | 0.331 | 99.2% faster, result repaired | NULL-safe anti-join plus reply index |
+| R19 | 33,492.766 | 31.426 | 99.9% faster | One grouped message scan replaces correlated scans |
+| R22 | 15.998 | 0.048 | 99.7% faster | Fixed-cursor primary-key scan; cursor derived before timing |
+| W02 | 11.881 | 1.262 | 89.4% faster | Indexed unread subset plus `EXISTS` probe |
 
-The final version must also cover all other workload queries through
-`benchmarks/results/optimized/summary.csv`, including regressions.
+Across the 30 per-query averages, the diagnostic sum fell from 34,038.790 ms
+to 367.835 ms (92.5x lower), driven mainly by R19. This sum is a comparison
+aid, not a concurrent-throughput measurement.
+
+### 7.1 Regressions and write overhead
+
+The benchmark records regressions rather than hiding them. R09 increased from
+18.258 ms to 21.742 ms and R24 from 15.103 ms to 18.390 ms; both remain
+sequential media scans and received no targeted rewrite. Very small queries
+R05, R15, R16 and R25 also increased in percentage terms, but each remained
+below 0.4 ms.
+
+Index maintenance is visible in the writes. W01 increased from 1.460 ms to
+5.670 ms, W03 from 0.427 ms to 2.986 ms, W04 from 51.886 ms to 62.309 ms, and
+W05 from 0.265 ms to 0.270 ms. W02 is the exception: its targeted rewrite and
+partial indexes reduced it from 11.881 ms to 1.262 ms. These costs accompany
+the 30 MB of workload indexes recorded in
+`benchmarks/results/indexes/size_audit.csv`.
+
+### 7.2 Evidence and rollback verification
+
+- All 30 query IDs have one raw plan file containing exactly three runs.
+- Every `avg_ms` value in `summary.csv` was recalculated from its raw plan and
+  matched to three decimal places.
+- Database row counts and the rows targeted by W01-W05 were captured before
+  and after the full run; the snapshots were identical.
+- The benchmark runner wrapped every WRITE in `BEGIN` / `ROLLBACK`, so no
+  benchmark mutation persisted.
 
 ## 8. CP3 integration checklist
 
@@ -318,7 +346,7 @@ The final version must also cover all other workload queries through
 - [x] Utkarsh: `sql/07_validate_optimized_queries.sql` extended with repeatable validation for R10, R19, R22, W02.
 - [x] Utkarsh: `queries/workload_30_optimized.sql` created with all 30 queries and correct markers.
 - [x] Utkarsh: `docs/04_optimization_report.md` updated with R10, R19, R22, W02 correctness evidence.
-- [ ] Shambhavi: three optimized runs per query and rollback checks committed.
-- [ ] Shambhavi: `benchmarks/results/optimized/summary.csv` reconciled to raw plans.
-- [ ] Final reviewer: pending table replaced with measured values and all tracker
-  paths verified on `main`.
+- [x] Shambhavi: three optimized runs per query and rollback checks committed.
+- [x] Shambhavi: `benchmarks/results/optimized/summary.csv` reconciled to raw plans.
+- [x] Final reviewer: pending table replaced with measured values and all tracker
+  paths verified on the benchmark branch.

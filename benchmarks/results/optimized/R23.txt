@@ -1,0 +1,39 @@
+=== R23 run 1 ===
+Sort  (cost=821.16..835.99 rows=5929 width=30) (actual time=2.497..2.708 rows=6945 loops=1)
+  Sort Key: last_active_at
+  Sort Method: quicksort  Memory: 681kB
+  Buffers: shared hit=4 read=74
+  ->  Index Only Scan using idx_devices_type_last_active on devices d  (cost=0.29..449.61 rows=5929 width=30) (actual time=0.086..1.175 rows=6945 loops=1)
+        Index Cond: (last_active_at < '2026-06-01 00:00:00+05:30'::timestamp with time zone)
+        Heap Fetches: 0
+        Buffers: shared hit=1 read=74
+Planning:
+  Buffers: shared hit=179
+Planning Time: 0.431 ms
+Execution Time: 2.954 ms
+=== R23 run 2 ===
+Sort  (cost=821.16..835.99 rows=5929 width=30) (actual time=2.350..2.558 rows=6945 loops=1)
+  Sort Key: last_active_at
+  Sort Method: quicksort  Memory: 681kB
+  Buffers: shared hit=78
+  ->  Index Only Scan using idx_devices_type_last_active on devices d  (cost=0.29..449.61 rows=5929 width=30) (actual time=0.045..1.120 rows=6945 loops=1)
+        Index Cond: (last_active_at < '2026-06-01 00:00:00+05:30'::timestamp with time zone)
+        Heap Fetches: 0
+        Buffers: shared hit=75
+Planning:
+  Buffers: shared hit=179
+Planning Time: 0.423 ms
+Execution Time: 2.808 ms
+=== R23 run 3 ===
+Sort  (cost=821.16..835.99 rows=5929 width=30) (actual time=2.797..3.085 rows=6945 loops=1)
+  Sort Key: last_active_at
+  Sort Method: quicksort  Memory: 681kB
+  Buffers: shared hit=78
+  ->  Index Only Scan using idx_devices_type_last_active on devices d  (cost=0.29..449.61 rows=5929 width=30) (actual time=0.082..1.288 rows=6945 loops=1)
+        Index Cond: (last_active_at < '2026-06-01 00:00:00+05:30'::timestamp with time zone)
+        Heap Fetches: 0
+        Buffers: shared hit=75
+Planning:
+  Buffers: shared hit=179
+Planning Time: 0.868 ms
+Execution Time: 3.422 ms

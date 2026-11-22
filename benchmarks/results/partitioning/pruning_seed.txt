@@ -6,7 +6,7 @@ CREATE TABLE
 CREATE INDEX
 INSERT 0 120000
 ANALYZE
-                                                                         QUERY PLAN                                                                         
+                                                                         QUERY PLAN
 ------------------------------------------------------------------------------------------------------------------------------------------------------------
  Aggregate  (cost=197.37..197.38 rows=1 width=8) (actual time=0.785..0.786 rows=1.00 loops=1)
    Buffers: shared hit=82

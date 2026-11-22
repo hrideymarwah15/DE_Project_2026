@@ -1,0 +1,87 @@
+=== W02 run 1 ===
+Update on message_receipts r  (cost=32.36..62.73 rows=0 width=0) (actual time=0.608..0.608 rows=0.00 loops=1)
+  Buffers: shared hit=152 read=33 dirtied=29
+  ->  Hash Join  (cost=32.36..62.73 rows=1 width=28) (actual time=0.180..0.266 rows=14.00 loops=1)
+        Hash Cond: (m.message_id = r.message_id)
+        Buffers: shared hit=50 read=12
+        ->  Bitmap Heap Scan on messages m  (cost=4.48..34.83 rows=8 width=14) (actual time=0.035..0.114 rows=34.00 loops=1)
+              Recheck Cond: (chat_id = 22556)
+              Heap Blocks: exact=36
+              Buffers: shared hit=42 read=1
+              ->  Bitmap Index Scan on idx_messages_chat_sent_desc  (cost=0.00..4.48 rows=8 width=0) (actual time=0.023..0.023 rows=37.00 loops=1)
+                    Index Cond: (chat_id = 22556)
+                    Index Searches: 1
+                    Buffers: shared hit=6 read=1
+        ->  Hash  (cost=27.80..27.80 rows=6 width=22) (actual time=0.140..0.140 rows=16.00 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 9kB
+              Buffers: shared hit=8 read=11
+              ->  Bitmap Heap Scan on message_receipts r  (cost=4.46..27.80 rows=6 width=22) (actual time=0.052..0.132 rows=16.00 loops=1)
+                    Recheck Cond: ((user_id = 965) AND (read_at IS NULL))
+                    Heap Blocks: exact=16
+                    Buffers: shared hit=8 read=11
+                    ->  Bitmap Index Scan on idx_receipts_unread_user_message  (cost=0.00..4.46 rows=6 width=0) (actual time=0.016..0.016 rows=16.00 loops=1)
+                          Index Cond: (user_id = 965)
+                          Index Searches: 1
+                          Buffers: shared read=3
+Planning:
+  Buffers: shared hit=356 read=8
+Planning Time: 1.026 ms
+Execution Time: 0.811 ms
+=== W02 run 2 ===
+Update on message_receipts r  (cost=32.36..62.73 rows=0 width=0) (actual time=0.399..0.400 rows=0.00 loops=1)
+  Buffers: shared hit=199 dirtied=1
+  ->  Hash Join  (cost=32.36..62.73 rows=1 width=28) (actual time=0.097..0.190 rows=14.00 loops=1)
+        Hash Cond: (m.message_id = r.message_id)
+        Buffers: shared hit=62
+        ->  Bitmap Heap Scan on messages m  (cost=4.48..34.83 rows=8 width=14) (actual time=0.034..0.121 rows=34.00 loops=1)
+              Recheck Cond: (chat_id = 22556)
+              Heap Blocks: exact=36
+              Buffers: shared hit=43
+              ->  Bitmap Index Scan on idx_messages_chat_sent_desc  (cost=0.00..4.48 rows=8 width=0) (actual time=0.023..0.023 rows=37.00 loops=1)
+                    Index Cond: (chat_id = 22556)
+                    Index Searches: 1
+                    Buffers: shared hit=7
+        ->  Hash  (cost=27.80..27.80 rows=6 width=22) (actual time=0.057..0.057 rows=16.00 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 9kB
+              Buffers: shared hit=19
+              ->  Bitmap Heap Scan on message_receipts r  (cost=4.46..27.80 rows=6 width=22) (actual time=0.016..0.051 rows=16.00 loops=1)
+                    Recheck Cond: ((user_id = 965) AND (read_at IS NULL))
+                    Heap Blocks: exact=16
+                    Buffers: shared hit=19
+                    ->  Bitmap Index Scan on idx_receipts_unread_user_message  (cost=0.00..4.46 rows=6 width=0) (actual time=0.008..0.008 rows=16.00 loops=1)
+                          Index Cond: (user_id = 965)
+                          Index Searches: 1
+                          Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=363
+Planning Time: 0.986 ms
+Execution Time: 0.495 ms
+=== W02 run 3 ===
+Update on message_receipts r  (cost=32.36..62.73 rows=0 width=0) (actual time=0.376..0.376 rows=0.00 loops=1)
+  Buffers: shared hit=199 dirtied=1
+  ->  Hash Join  (cost=32.36..62.73 rows=1 width=28) (actual time=0.089..0.177 rows=14.00 loops=1)
+        Hash Cond: (m.message_id = r.message_id)
+        Buffers: shared hit=62
+        ->  Bitmap Heap Scan on messages m  (cost=4.48..34.83 rows=8 width=14) (actual time=0.032..0.114 rows=34.00 loops=1)
+              Recheck Cond: (chat_id = 22556)
+              Heap Blocks: exact=36
+              Buffers: shared hit=43
+              ->  Bitmap Index Scan on idx_messages_chat_sent_desc  (cost=0.00..4.48 rows=8 width=0) (actual time=0.021..0.021 rows=37.00 loops=1)
+                    Index Cond: (chat_id = 22556)
+                    Index Searches: 1
+                    Buffers: shared hit=7
+        ->  Hash  (cost=27.80..27.80 rows=6 width=22) (actual time=0.052..0.052 rows=16.00 loops=1)
+              Buckets: 1024  Batches: 1  Memory Usage: 9kB
+              Buffers: shared hit=19
+              ->  Bitmap Heap Scan on message_receipts r  (cost=4.46..27.80 rows=6 width=22) (actual time=0.015..0.045 rows=16.00 loops=1)
+                    Recheck Cond: ((user_id = 965) AND (read_at IS NULL))
+                    Heap Blocks: exact=16
+                    Buffers: shared hit=19
+                    ->  Bitmap Index Scan on idx_receipts_unread_user_message  (cost=0.00..4.46 rows=6 width=0) (actual time=0.008..0.008 rows=16.00 loops=1)
+                          Index Cond: (user_id = 965)
+                          Index Searches: 1
+                          Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=363
+Planning Time: 0.958 ms
+Execution Time: 0.467 ms

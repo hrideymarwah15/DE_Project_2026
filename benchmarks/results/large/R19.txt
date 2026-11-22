@@ -1,0 +1,120 @@
+=== R19 run 1 ===
+Sort  (cost=202882.48..203028.23 rows=58297 width=40) (actual time=818.415..822.386 rows=60000.00 loops=1)
+  Sort Key: (max(m.sent_at)) DESC NULLS LAST
+  Sort Method: external merge  Disk: 3168kB
+  Buffers: shared hit=12812 read=20263, temp read=8858 written=13359
+  ->  Hash Right Join  (cost=147786.89..198267.94 rows=58297 width=40) (actual time=746.792..799.843 rows=60000.00 loops=1)
+        Hash Cond: (m.chat_id = c.chat_id)
+        Buffers: shared hit=12809 read=20263, temp read=8462 written=12962
+        ->  Finalize GroupAggregate  (cost=137788.17..186278.50 rows=157682 width=24) (actual time=493.833..694.727 rows=423778.00 loops=1)
+              Group Key: m.chat_id
+              Buffers: shared hit=9289 read=20263, temp read=8462 written=12962
+              ->  Gather Merge  (cost=137788.17..181863.40 rows=378437 width=24) (actual time=493.826..598.426 rows=840826.00 loops=1)
+                    Workers Planned: 2
+                    Workers Launched: 2
+                    Buffers: shared hit=9289 read=20263, temp read=8462 written=12962
+                    ->  Sort  (cost=136788.15..137182.36 rows=157682 width=24) (actual time=488.723..512.780 rows=280275.33 loops=3)
+                          Sort Key: m.chat_id
+                          Sort Method: external merge  Disk: 9224kB
+                          Buffers: shared hit=9289 read=20263, temp read=8462 written=12962
+                          Worker 0:  Sort Method: external merge  Disk: 9184kB
+                          Worker 1:  Sort Method: external merge  Disk: 9608kB
+                          ->  Partial HashAggregate  (cost=108598.50..119940.95 rows=157682 width=24) (actual time=308.432..412.413 rows=280275.33 loops=3)
+                                Group Key: m.chat_id
+                                Planned Partitions: 4  Batches: 5  Memory Usage: 10041kB  Disk Usage: 15264kB
+                                Buffers: shared hit=9273 read=20263, temp read=4960 written=9448
+                                Worker 0:  Batches: 5  Memory Usage: 9785kB  Disk Usage: 15312kB
+                                Worker 1:  Batches: 5  Memory Usage: 7993kB  Disk Usage: 15584kB
+                                ->  Parallel Seq Scan on messages m  (cost=0.00..39536.00 rows=1000000 width=16) (actual time=0.105..50.041 rows=800000.00 loops=3)
+                                      Buffers: shared hit=9273 read=20263
+        ->  Hash  (cost=9270.00..9270.00 rows=58297 width=24) (actual time=34.114..34.114 rows=60000.00 loops=1)
+              Buckets: 65536  Batches: 1  Memory Usage: 3831kB
+              Buffers: shared hit=3520
+              ->  Seq Scan on chats c  (cost=0.00..9270.00 rows=58297 width=24) (actual time=21.479..27.743 rows=60000.00 loops=1)
+                    Filter: (chat_type = 'GROUP'::text)
+                    Rows Removed by Filter: 400000
+                    Buffers: shared hit=3520
+Planning:
+  Buffers: shared hit=230
+Planning Time: 0.837 ms
+Execution Time: 828.489 ms
+=== R19 run 2 ===
+Sort  (cost=202882.48..203028.23 rows=58297 width=40) (actual time=815.025..819.026 rows=60000.00 loops=1)
+  Sort Key: (max(m.sent_at)) DESC NULLS LAST
+  Sort Method: external merge  Disk: 3168kB
+  Buffers: shared hit=12812 read=20263, temp read=8926 written=13429
+  ->  Hash Right Join  (cost=147786.89..198267.94 rows=58297 width=40) (actual time=743.729..797.125 rows=60000.00 loops=1)
+        Hash Cond: (m.chat_id = c.chat_id)
+        Buffers: shared hit=12809 read=20263, temp read=8530 written=13032
+        ->  Finalize GroupAggregate  (cost=137788.17..186278.50 rows=157682 width=24) (actual time=499.657..701.181 rows=423778.00 loops=1)
+              Group Key: m.chat_id
+              Buffers: shared hit=9289 read=20263, temp read=8530 written=13032
+              ->  Gather Merge  (cost=137788.17..181863.40 rows=378437 width=24) (actual time=499.650..605.034 rows=841800.00 loops=1)
+                    Workers Planned: 2
+                    Workers Launched: 2
+                    Buffers: shared hit=9289 read=20263, temp read=8530 written=13032
+                    ->  Sort  (cost=136788.15..137182.36 rows=157682 width=24) (actual time=492.002..514.962 rows=280600.00 loops=3)
+                          Sort Key: m.chat_id
+                          Sort Method: external merge  Disk: 9424kB
+                          Buffers: shared hit=9289 read=20263, temp read=8530 written=13032
+                          Worker 0:  Sort Method: external merge  Disk: 9312kB
+                          Worker 1:  Sort Method: external merge  Disk: 9312kB
+                          ->  Partial HashAggregate  (cost=108598.50..119940.95 rows=157682 width=24) (actual time=313.705..416.923 rows=280600.00 loops=3)
+                                Group Key: m.chat_id
+                                Planned Partitions: 4  Batches: 5  Memory Usage: 9785kB  Disk Usage: 15504kB
+                                Buffers: shared hit=9273 read=20263, temp read=5024 written=9514
+                                Worker 0:  Batches: 5  Memory Usage: 9785kB  Disk Usage: 15424kB
+                                Worker 1:  Batches: 5  Memory Usage: 10041kB  Disk Usage: 15344kB
+                                ->  Parallel Seq Scan on messages m  (cost=0.00..39536.00 rows=1000000 width=16) (actual time=0.117..49.413 rows=800000.00 loops=3)
+                                      Buffers: shared hit=9273 read=20263
+        ->  Hash  (cost=9270.00..9270.00 rows=58297 width=24) (actual time=33.475..33.475 rows=60000.00 loops=1)
+              Buckets: 65536  Batches: 1  Memory Usage: 3831kB
+              Buffers: shared hit=3520
+              ->  Seq Scan on chats c  (cost=0.00..9270.00 rows=58297 width=24) (actual time=21.451..27.458 rows=60000.00 loops=1)
+                    Filter: (chat_type = 'GROUP'::text)
+                    Rows Removed by Filter: 400000
+                    Buffers: shared hit=3520
+Planning:
+  Buffers: shared hit=230
+Planning Time: 0.855 ms
+Execution Time: 825.124 ms
+=== R19 run 3 ===
+Sort  (cost=202882.48..203028.23 rows=58297 width=40) (actual time=796.214..800.127 rows=60000.00 loops=1)
+  Sort Key: (max(m.sent_at)) DESC NULLS LAST
+  Sort Method: external merge  Disk: 3168kB
+  Buffers: shared hit=13094 read=19981, temp read=8864 written=13367
+  ->  Hash Right Join  (cost=147786.89..198267.94 rows=58297 width=40) (actual time=724.454..776.763 rows=60000.00 loops=1)
+        Hash Cond: (m.chat_id = c.chat_id)
+        Buffers: shared hit=13091 read=19981, temp read=8468 written=12970
+        ->  Finalize GroupAggregate  (cost=137788.17..186278.50 rows=157682 width=24) (actual time=478.905..679.863 rows=423778.00 loops=1)
+              Group Key: m.chat_id
+              Buffers: shared hit=9571 read=19981, temp read=8468 written=12970
+              ->  Gather Merge  (cost=137788.17..181863.40 rows=378437 width=24) (actual time=478.898..583.521 rows=840667.00 loops=1)
+                    Workers Planned: 2
+                    Workers Launched: 2
+                    Buffers: shared hit=9571 read=19981, temp read=8468 written=12970
+                    ->  Sort  (cost=136788.15..137182.36 rows=157682 width=24) (actual time=472.660..496.209 rows=280222.33 loops=3)
+                          Sort Key: m.chat_id
+                          Sort Method: external merge  Disk: 9248kB
+                          Buffers: shared hit=9571 read=19981, temp read=8468 written=12970
+                          Worker 0:  Sort Method: external merge  Disk: 9672kB
+                          Worker 1:  Sort Method: external merge  Disk: 9088kB
+                          ->  Partial HashAggregate  (cost=108598.50..119940.95 rows=157682 width=24) (actual time=305.225..402.082 rows=280222.33 loops=3)
+                                Group Key: m.chat_id
+                                Planned Partitions: 4  Batches: 5  Memory Usage: 10041kB  Disk Usage: 15320kB
+                                Buffers: shared hit=9555 read=19981, temp read=4967 written=9457
+                                Worker 0:  Batches: 5  Memory Usage: 7993kB  Disk Usage: 15648kB
+                                Worker 1:  Batches: 5  Memory Usage: 9785kB  Disk Usage: 15184kB
+                                ->  Parallel Seq Scan on messages m  (cost=0.00..39536.00 rows=1000000 width=16) (actual time=0.097..50.824 rows=800000.00 loops=3)
+                                      Buffers: shared hit=9555 read=19981
+        ->  Hash  (cost=9270.00..9270.00 rows=58297 width=24) (actual time=33.940..33.941 rows=60000.00 loops=1)
+              Buckets: 65536  Batches: 1  Memory Usage: 3831kB
+              Buffers: shared hit=3520
+              ->  Seq Scan on chats c  (cost=0.00..9270.00 rows=58297 width=24) (actual time=21.679..27.817 rows=60000.00 loops=1)
+                    Filter: (chat_type = 'GROUP'::text)
+                    Rows Removed by Filter: 400000
+                    Buffers: shared hit=3520
+Planning:
+  Buffers: shared hit=230
+Planning Time: 0.765 ms
+Execution Time: 805.134 ms

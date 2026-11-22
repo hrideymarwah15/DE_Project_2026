@@ -1,0 +1,66 @@
+=== R12 run 1 ===
+Sort  (cost=1951.84..1956.93 rows=2036 width=20) (actual time=7.283..7.284 rows=3.00 loops=1)
+  Sort Key: (count(*)) DESC, sender_id
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=698 read=782
+  ->  HashAggregate  (cost=1758.51..1839.95 rows=2036 width=20) (actual time=7.010..7.267 rows=3.00 loops=1)
+        Group Key: sender_id, (sent_at)::date
+        Filter: (count(*) >= 2)
+        Batches: 1  Memory Usage: 665kB
+        Rows Removed by Filter: 5992
+        Buffers: shared hit=695 read=782
+        ->  Bitmap Heap Scan on messages  (cost=132.35..1712.70 rows=6108 width=12) (actual time=0.628..5.658 rows=5998.00 loops=1)
+              Recheck Cond: is_forwarded
+              Heap Blocks: exact=1453
+              Buffers: shared hit=695 read=782
+              ->  Bitmap Index Scan on idx_messages_forwarded_sender_sent  (cost=0.00..130.82 rows=6108 width=0) (actual time=0.454..0.454 rows=5998.00 loops=1)
+                    Index Searches: 1
+                    Buffers: shared read=24
+Planning:
+  Buffers: shared hit=215
+Planning Time: 0.613 ms
+Execution Time: 7.371 ms
+=== R12 run 2 ===
+Sort  (cost=1951.84..1956.93 rows=2036 width=20) (actual time=5.222..5.223 rows=3.00 loops=1)
+  Sort Key: (count(*)) DESC, sender_id
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=1480
+  ->  HashAggregate  (cost=1758.51..1839.95 rows=2036 width=20) (actual time=4.941..5.205 rows=3.00 loops=1)
+        Group Key: sender_id, (sent_at)::date
+        Filter: (count(*) >= 2)
+        Batches: 1  Memory Usage: 665kB
+        Rows Removed by Filter: 5992
+        Buffers: shared hit=1477
+        ->  Bitmap Heap Scan on messages  (cost=132.35..1712.70 rows=6108 width=12) (actual time=0.582..3.842 rows=5998.00 loops=1)
+              Recheck Cond: is_forwarded
+              Heap Blocks: exact=1453
+              Buffers: shared hit=1477
+              ->  Bitmap Index Scan on idx_messages_forwarded_sender_sent  (cost=0.00..130.82 rows=6108 width=0) (actual time=0.408..0.409 rows=5998.00 loops=1)
+                    Index Searches: 1
+                    Buffers: shared hit=24
+Planning:
+  Buffers: shared hit=215
+Planning Time: 0.761 ms
+Execution Time: 5.304 ms
+=== R12 run 3 ===
+Sort  (cost=1951.84..1956.93 rows=2036 width=20) (actual time=5.506..5.507 rows=3.00 loops=1)
+  Sort Key: (count(*)) DESC, sender_id
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=1480
+  ->  HashAggregate  (cost=1758.51..1839.95 rows=2036 width=20) (actual time=5.042..5.479 rows=3.00 loops=1)
+        Group Key: sender_id, (sent_at)::date
+        Filter: (count(*) >= 2)
+        Batches: 1  Memory Usage: 665kB
+        Rows Removed by Filter: 5992
+        Buffers: shared hit=1477
+        ->  Bitmap Heap Scan on messages  (cost=132.35..1712.70 rows=6108 width=12) (actual time=0.580..3.844 rows=5998.00 loops=1)
+              Recheck Cond: is_forwarded
+              Heap Blocks: exact=1453
+              Buffers: shared hit=1477
+              ->  Bitmap Index Scan on idx_messages_forwarded_sender_sent  (cost=0.00..130.82 rows=6108 width=0) (actual time=0.403..0.403 rows=5998.00 loops=1)
+                    Index Searches: 1
+                    Buffers: shared hit=24
+Planning:
+  Buffers: shared hit=215
+Planning Time: 0.629 ms
+Execution Time: 5.581 ms

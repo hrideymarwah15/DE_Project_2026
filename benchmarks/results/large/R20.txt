@@ -1,0 +1,42 @@
+=== R20 run 1 ===
+GroupAggregate  (cost=445121.24..499121.24 rows=2400000 width=45) (actual time=1665.006..2397.034 rows=144.00 loops=1)
+  Group Key: (EXTRACT(hour FROM sent_at)), message_type
+  Buffers: shared hit=9843 read=19699, temp read=11934 written=11967
+  ->  Sort  (cost=445121.24..451121.24 rows=2400000 width=37) (actual time=1663.177..2137.569 rows=2400000.00 loops=1)
+        Sort Key: (EXTRACT(hour FROM sent_at)), message_type
+        Sort Method: external merge  Disk: 47752kB
+        Buffers: shared hit=9843 read=19699, temp read=11934 written=11967
+        ->  Seq Scan on messages  (cost=0.00..59536.00 rows=2400000 width=37) (actual time=0.056..478.496 rows=2400000.00 loops=1)
+              Buffers: shared hit=9837 read=19699
+Planning:
+  Buffers: shared hit=217
+Planning Time: 0.730 ms
+Execution Time: 2406.108 ms
+=== R20 run 2 ===
+GroupAggregate  (cost=445121.24..499121.24 rows=2400000 width=45) (actual time=1629.885..2334.819 rows=144.00 loops=1)
+  Group Key: (EXTRACT(hour FROM sent_at)), message_type
+  Buffers: shared hit=9937 read=19605, temp read=11934 written=11967
+  ->  Sort  (cost=445121.24..451121.24 rows=2400000 width=37) (actual time=1628.182..2086.277 rows=2400000.00 loops=1)
+        Sort Key: (EXTRACT(hour FROM sent_at)), message_type
+        Sort Method: external merge  Disk: 47752kB
+        Buffers: shared hit=9937 read=19605, temp read=11934 written=11967
+        ->  Seq Scan on messages  (cost=0.00..59536.00 rows=2400000 width=37) (actual time=0.058..460.122 rows=2400000.00 loops=1)
+              Buffers: shared hit=9931 read=19605
+Planning:
+  Buffers: shared hit=217
+Planning Time: 0.616 ms
+Execution Time: 2337.791 ms
+=== R20 run 3 ===
+GroupAggregate  (cost=445121.24..499121.24 rows=2400000 width=45) (actual time=1595.815..2307.084 rows=144.00 loops=1)
+  Group Key: (EXTRACT(hour FROM sent_at)), message_type
+  Buffers: shared hit=10031 read=19511, temp read=11934 written=11967
+  ->  Sort  (cost=445121.24..451121.24 rows=2400000 width=37) (actual time=1594.149..2056.392 rows=2400000.00 loops=1)
+        Sort Key: (EXTRACT(hour FROM sent_at)), message_type
+        Sort Method: external merge  Disk: 47752kB
+        Buffers: shared hit=10031 read=19511, temp read=11934 written=11967
+        ->  Seq Scan on messages  (cost=0.00..59536.00 rows=2400000 width=37) (actual time=0.048..450.778 rows=2400000.00 loops=1)
+              Buffers: shared hit=10025 read=19511
+Planning:
+  Buffers: shared hit=217
+Planning Time: 0.582 ms
+Execution Time: 2315.941 ms

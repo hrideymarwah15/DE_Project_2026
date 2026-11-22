@@ -1,0 +1,33 @@
+=== R02 run 1 ===
+Limit  (cost=0.43..64.69 rows=15 width=57) (actual time=0.016..0.020 rows=3.00 loops=1)
+  Buffers: shared hit=9
+  ->  Index Scan using idx_messages_chat_sent_desc on messages  (cost=0.43..64.69 rows=15 width=57) (actual time=0.016..0.019 rows=3.00 loops=1)
+        Index Cond: (chat_id = 22556)
+        Index Searches: 1
+        Buffers: shared hit=9
+Planning:
+  Buffers: shared hit=194
+Planning Time: 0.630 ms
+Execution Time: 0.039 ms
+=== R02 run 2 ===
+Limit  (cost=0.43..64.69 rows=15 width=57) (actual time=0.016..0.020 rows=3.00 loops=1)
+  Buffers: shared hit=9
+  ->  Index Scan using idx_messages_chat_sent_desc on messages  (cost=0.43..64.69 rows=15 width=57) (actual time=0.016..0.019 rows=3.00 loops=1)
+        Index Cond: (chat_id = 22556)
+        Index Searches: 1
+        Buffers: shared hit=9
+Planning:
+  Buffers: shared hit=194
+Planning Time: 0.617 ms
+Execution Time: 0.038 ms
+=== R02 run 3 ===
+Limit  (cost=0.43..64.69 rows=15 width=57) (actual time=0.016..0.019 rows=3.00 loops=1)
+  Buffers: shared hit=9
+  ->  Index Scan using idx_messages_chat_sent_desc on messages  (cost=0.43..64.69 rows=15 width=57) (actual time=0.015..0.018 rows=3.00 loops=1)
+        Index Cond: (chat_id = 22556)
+        Index Searches: 1
+        Buffers: shared hit=9
+Planning:
+  Buffers: shared hit=194
+Planning Time: 0.649 ms
+Execution Time: 0.037 ms

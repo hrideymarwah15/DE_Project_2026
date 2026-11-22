@@ -1,0 +1,66 @@
+=== R11 run 1 ===
+Sort  (cost=419.40..419.40 rows=1 width=30) (actual time=1.107..1.108 rows=1.00 loops=1)
+  Sort Key: c.started_at DESC
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=160 read=48
+  ->  Nested Loop  (cost=0.70..419.39 rows=1 width=30) (actual time=0.493..1.095 rows=1.00 loops=1)
+        Buffers: shared hit=157 read=48
+        ->  Index Only Scan using idx_chat_members_user_chat on chat_members cm  (cost=0.42..20.49 rows=4 width=8) (actual time=0.014..0.032 rows=4.00 loops=1)
+              Index Cond: (user_id = 965)
+              Heap Fetches: 4
+              Index Searches: 1
+              Buffers: shared hit=10
+        ->  Index Only Scan using idx_calls_missed_started_chat on calls c  (cost=0.28..99.71 rows=1 width=38) (actual time=0.225..0.264 rows=0.25 loops=4)
+              Index Cond: (chat_id = cm.chat_id)
+              Filter: ((caller_id <> 965) AND (EXTRACT(year FROM started_at) >= '2025'::numeric))
+              Heap Fetches: 1
+              Index Searches: 4
+              Buffers: shared hit=147 read=48
+Planning:
+  Buffers: shared hit=303 read=3 dirtied=1
+Planning Time: 0.958 ms
+Execution Time: 1.133 ms
+=== R11 run 2 ===
+Sort  (cost=419.40..419.40 rows=1 width=30) (actual time=0.564..0.565 rows=1.00 loops=1)
+  Sort Key: c.started_at DESC
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=208
+  ->  Nested Loop  (cost=0.70..419.39 rows=1 width=30) (actual time=0.127..0.552 rows=1.00 loops=1)
+        Buffers: shared hit=205
+        ->  Index Only Scan using idx_chat_members_user_chat on chat_members cm  (cost=0.42..20.49 rows=4 width=8) (actual time=0.013..0.019 rows=4.00 loops=1)
+              Index Cond: (user_id = 965)
+              Heap Fetches: 4
+              Index Searches: 1
+              Buffers: shared hit=10
+        ->  Index Only Scan using idx_calls_missed_started_chat on calls c  (cost=0.28..99.71 rows=1 width=38) (actual time=0.110..0.132 rows=0.25 loops=4)
+              Index Cond: (chat_id = cm.chat_id)
+              Filter: ((caller_id <> 965) AND (EXTRACT(year FROM started_at) >= '2025'::numeric))
+              Heap Fetches: 1
+              Index Searches: 4
+              Buffers: shared hit=195
+Planning:
+  Buffers: shared hit=306
+Planning Time: 1.020 ms
+Execution Time: 0.589 ms
+=== R11 run 3 ===
+Sort  (cost=419.40..419.40 rows=1 width=30) (actual time=0.607..0.608 rows=1.00 loops=1)
+  Sort Key: c.started_at DESC
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=208
+  ->  Nested Loop  (cost=0.70..419.39 rows=1 width=30) (actual time=0.164..0.593 rows=1.00 loops=1)
+        Buffers: shared hit=205
+        ->  Index Only Scan using idx_chat_members_user_chat on chat_members cm  (cost=0.42..20.49 rows=4 width=8) (actual time=0.016..0.023 rows=4.00 loops=1)
+              Index Cond: (user_id = 965)
+              Heap Fetches: 4
+              Index Searches: 1
+              Buffers: shared hit=10
+        ->  Index Only Scan using idx_calls_missed_started_chat on calls c  (cost=0.28..99.71 rows=1 width=38) (actual time=0.118..0.141 rows=0.25 loops=4)
+              Index Cond: (chat_id = cm.chat_id)
+              Filter: ((caller_id <> 965) AND (EXTRACT(year FROM started_at) >= '2025'::numeric))
+              Heap Fetches: 1
+              Index Searches: 4
+              Buffers: shared hit=195
+Planning:
+  Buffers: shared hit=306
+Planning Time: 1.080 ms
+Execution Time: 0.633 ms

@@ -1,0 +1,54 @@
+=== R24 run 1 ===
+Sort  (cost=91952.52..92082.32 rows=51920 width=105) (actual time=554.773..554.776 rows=48.00 loops=1)
+  Sort Key: (count(*)) DESC
+  Sort Method: quicksort  Memory: 30kB
+  Buffers: shared hit=535105 read=18891 written=12
+  ->  GroupAggregate  (cost=0.55..84869.14 rows=51920 width=105) (actual time=26.464..554.690 rows=48.00 loops=1)
+        Group Key: sha256
+        Filter: (count(*) > 1)
+        Rows Removed by Filter: 485032
+        Buffers: shared hit=535102 read=18891 written=12
+        ->  Index Only Scan using idx_media_sha256_size on media  (cost=0.55..78399.33 rows=551121 width=73) (actual time=0.456..438.743 rows=551121.00 loops=1)
+              Heap Fetches: 551121
+              Index Searches: 1
+              Buffers: shared hit=535102 read=18891 written=12
+Planning:
+  Buffers: shared hit=171 read=8 dirtied=2
+Planning Time: 4.130 ms
+Execution Time: 554.848 ms
+=== R24 run 2 ===
+Sort  (cost=91952.52..92082.32 rows=51920 width=105) (actual time=503.744..503.747 rows=48.00 loops=1)
+  Sort Key: (count(*)) DESC
+  Sort Method: quicksort  Memory: 30kB
+  Buffers: shared hit=547016 read=6980
+  ->  GroupAggregate  (cost=0.55..84869.14 rows=51920 width=105) (actual time=11.279..503.672 rows=48.00 loops=1)
+        Group Key: sha256
+        Filter: (count(*) > 1)
+        Rows Removed by Filter: 485032
+        Buffers: shared hit=547013 read=6980
+        ->  Index Only Scan using idx_media_sha256_size on media  (cost=0.55..78399.33 rows=551121 width=73) (actual time=0.038..378.733 rows=551121.00 loops=1)
+              Heap Fetches: 551121
+              Index Searches: 1
+              Buffers: shared hit=547013 read=6980
+Planning:
+  Buffers: shared hit=145 read=32
+Planning Time: 1.530 ms
+Execution Time: 503.813 ms
+=== R24 run 3 ===
+Sort  (cost=91952.52..92082.32 rows=51920 width=105) (actual time=430.232..430.235 rows=48.00 loops=1)
+  Sort Key: (count(*)) DESC
+  Sort Method: quicksort  Memory: 30kB
+  Buffers: shared hit=547016 read=6980
+  ->  GroupAggregate  (cost=0.55..84869.14 rows=51920 width=105) (actual time=12.254..430.109 rows=48.00 loops=1)
+        Group Key: sha256
+        Filter: (count(*) > 1)
+        Rows Removed by Filter: 485032
+        Buffers: shared hit=547013 read=6980
+        ->  Index Only Scan using idx_media_sha256_size on media  (cost=0.55..78399.33 rows=551121 width=73) (actual time=0.054..313.604 rows=551121.00 loops=1)
+              Heap Fetches: 551121
+              Index Searches: 1
+              Buffers: shared hit=547013 read=6980
+Planning:
+  Buffers: shared hit=162 read=15
+Planning Time: 1.104 ms
+Execution Time: 430.493 ms

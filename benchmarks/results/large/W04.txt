@@ -1,0 +1,42 @@
+=== W04 run 1 ===
+Insert on message_receipts  (cost=0.00..62.50 rows=0 width=0) (actual time=32.296..32.297 rows=0.00 loops=1)
+  Conflict Resolution: NOTHING
+  Conflict Arbiter Indexes: message_receipts_pkey
+  Tuples Inserted: 5000
+  Conflicting Tuples: 0
+  Buffers: shared hit=70198 read=117 dirtied=241 written=122
+  ->  Function Scan on generate_series g  (cost=0.00..62.50 rows=5000 width=32) (actual time=0.212..0.678 rows=5000.00 loops=1)
+Planning:
+  Buffers: shared hit=62
+Planning Time: 0.149 ms
+Trigger for constraint message_receipts_message_id_fkey: time=18.394 calls=5000
+Trigger for constraint message_receipts_user_id_fkey: time=19.976 calls=5000
+Execution Time: 71.143 ms
+=== W04 run 2 ===
+Insert on message_receipts  (cost=0.00..62.50 rows=0 width=0) (actual time=30.290..30.291 rows=0.00 loops=1)
+  Conflict Resolution: NOTHING
+  Conflict Arbiter Indexes: message_receipts_pkey
+  Tuples Inserted: 5000
+  Conflicting Tuples: 0
+  Buffers: shared hit=71442 read=28 dirtied=47 written=19
+  ->  Function Scan on generate_series g  (cost=0.00..62.50 rows=5000 width=32) (actual time=0.251..0.719 rows=5000.00 loops=1)
+Planning:
+  Buffers: shared hit=62
+Planning Time: 0.209 ms
+Trigger for constraint message_receipts_message_id_fkey: time=18.689 calls=5000
+Trigger for constraint message_receipts_user_id_fkey: time=20.572 calls=5000
+Execution Time: 70.034 ms
+=== W04 run 3 ===
+Insert on message_receipts  (cost=0.00..62.50 rows=0 width=0) (actual time=28.623..28.624 rows=0.00 loops=1)
+  Conflict Resolution: NOTHING
+  Conflict Arbiter Indexes: message_receipts_pkey
+  Tuples Inserted: 5000
+  Conflicting Tuples: 0
+  Buffers: shared hit=71367 read=6 dirtied=28 written=20
+  ->  Function Scan on generate_series g  (cost=0.00..62.50 rows=5000 width=32) (actual time=0.214..0.653 rows=5000.00 loops=1)
+Planning:
+  Buffers: shared hit=62
+Planning Time: 0.162 ms
+Trigger for constraint message_receipts_message_id_fkey: time=18.870 calls=5000
+Trigger for constraint message_receipts_user_id_fkey: time=20.903 calls=5000
+Execution Time: 68.884 ms

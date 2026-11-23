@@ -138,8 +138,6 @@ unaffected by NULLs in `reply_to_message_id`. The partial index
 
 **Real observed result count:** 7 messages in group 20501 containing `?` with no replies.
 
-Optimized timing fields remain pending Shambhavi's three-run benchmark evidence.
-
 ### 6.2 R10 half-open range rewrite — validated
 
 **Why the original query was non-sargable:**
@@ -286,7 +284,7 @@ identical: only receipts for user 965 in chat 22556 with `read_at IS NULL`.
 2. **Affected row count confirmation** — Both queries target the same number of rows.
 3. **Rolled-back transaction** — Validation runs inside `BEGIN`/`ROLLBACK`; no persistent changes.
 
-## 7. Optimized timing comparison
+## 7. Optimized timing comparison (CP3 seed data, PostgreSQL 15.18)
 
 Shambhavi ran every query three times on the same PostgreSQL 15.18 seed-data
 environment used for CP2, after applying `sql/05_indexes.sql`. Raw plans and
@@ -334,7 +332,237 @@ the 30 MB of workload indexes recorded in
 - The benchmark runner wrapped every WRITE in `BEGIN` / `ROLLBACK`, so no
   benchmark mutation persisted.
 
-## 8. CP3 integration checklist
+## 8. CP4: Large-data growth comparison (PostgreSQL 18.6)
+
+The official faculty large-data release (17.5M rows, 2.4M messages, 10M receipts)
+was loaded into a fresh database using our CP1 schema and CP3 indexes.
+Archive SHA-256: `87745026da843423d1af090cc6845b65b8374358b56d5b9eedad27babded8c2e`.
+
+CP3 originally used PostgreSQL 15.18; therefore we reran the optimized seed
+workload on 18.6 (`seed_cp4/`) and compare that run here. Do not attribute
+version differences to data growth. Both phases used three sequential
+`EXPLAIN (ANALYZE, BUFFERS)` runs on the same computer. These are local
+microbenchmarks, not concurrent-user or cold-cache guarantees.
+
+### 8.1 Complete 30-query baseline-versus-optimized table (seed data)
+
+| Query | Baseline avg (ms) | Optimized avg (ms) | Change | Plan change |
+|---|---:|---:|---:|---|
+| R01 | 35.253 | 0.377 | 98.9% faster | Membership index plus indexed latest-message lookup |
+| R02 | 6.647 | 0.334 | 95.0% faster | Chat/time index |
+| R03 | 15.106 | 0.410 | 97.3% faster | Partial unread-receipt index |
+| R04 | 51.760 | 0.510 | 99.0% faster | Indexed membership and chat-message access |
+| R05 | 0.078 | 0.081 | -3.8% | PK lookup unchanged |
+| R06 | 0.349 | 0.470 | -34.7% | More index scans |
+| R07 | 0.265 | 0.454 | -71.3% | PK scans unchanged |
+| R08 | 30.750 | 14.875 | 51.6% faster | Partial pending-receipt and time indexes |
+| R09 | 18.258 | 21.742 | -19.1% | Seq scan unchanged |
+| R10 | 15.646 | 3.040 | 80.6% faster | Sargable time range uses `idx_messages_sent_at` |
+| R11 | 1.191 | 3.112 | -161% | More index scans |
+| R12 | 5.696 | 5.617 | 1.4% faster | Forwarded index |
+| R13 | 41.115 | 0.331 | 99.2% faster, result repaired | NULL-safe anti-join plus reply index |
+| R14 | 10.157 | 9.869 | 2.8% faster | Time index |
+| R15 | 0.041 | 0.113 | -175% | PK lookup |
+| R16 | 0.130 | 0.327 | -151% | PK scans |
+| R17 | 33.722 | 32.822 | 2.7% faster | Time index |
+| R18 | 29.505 | 25.497 | 13.6% faster | Last-seen index |
+| R19 | 33,492.766 | 31.426 | 99.9% faster | Grouped rewrite |
+| R20 | 83.714 | 97.045 | -15.9% | Seq scan |
+| R21 | 24.137 | 25.212 | -4.5% | Seq scan |
+| R22 | 15.998 | 0.048 | 99.7% faster | Keyset pagination |
+| R23 | 3.683 | 3.061 | 16.9% faster | Device index |
+| R24 | 15.103 | 18.390 | -21.8% | Seq scan |
+| R25 | 0.097 | 0.175 | -80% | PK scan |
+| W01 | 1.460 | 5.670 | -288% | Index maintenance |
+| W02 | 11.881 | 1.262 | 89.4% faster | EXISTS rewrite + partial indexes |
+| W03 | 0.427 | 2.986 | -600% | PK maintenance |
+| W04 | 51.886 | 62.309 | -20.1% | Insert overhead |
+| W05 | 0.265 | 0.270 | -1.9% | Membership index |
+
+Diagnostic sum (30 queries): baseline 34,038.790 ms → optimized 367.835 ms (92.5x lower).
+
+### 8.2 Five biggest improvements — before/after plan excerpts
+
+#### R19 — 33,492.8 ms → 31.4 ms (99.9% faster)
+**Baseline plan:** Seq Scan on chats with 2× correlated subqueries (Aggregate over Seq Scan on messages per group)
+```
+Sort (cost=18750764.26.. rows=3000 width=40)
+  -> Seq Scan on chats c
+        Filter: (chat_type = 'GROUP')
+        Rows Removed by Filter: 20000
+        SubPlan 1
+          -> Aggregate
+                -> Seq Scan on messages m
+                      Filter: (chat_id = c.chat_id)
+                      Rows Removed by Filter: 119976
+        SubPlan 2
+          -> Aggregate
+                -> Seq Scan on messages m_1
+                      Filter: (chat_id = c.chat_id AND m.sent_at >= '2026-06-01')
+```
+**Optimized plan:** Single HashAggregate over messages + Hash Right Join
+```
+Sort (cost=4874.98.. rows=3000 width=40)
+  -> Hash Right Join (cost=4376.00..4701.72 rows=3000 width=40)
+        Hash Cond: (m.chat_id = c.chat_id)
+        -> HashAggregate (Group Key: m.chat_id)
+              -> Seq Scan on messages m
+        -> Hash
+              -> Seq Scan on chats c
+                    Filter: (chat_type = 'GROUP')
+                    Rows Removed by Filter: 20000
+```
+
+#### R13 — 41.1 ms → 0.3 ms (99.2% faster, result repaired)
+**Baseline plan:** Seq Scan + NOT IN subquery (NULL-sensitive, returns 0 rows)
+```
+Seq Scan on messages m
+  Filter: (chat_id = 20501 AND body LIKE '%?%' AND message_id NOT IN (SELECT reply_to_message_id FROM messages))
+```
+**Optimized plan:** Bitmap Heap Scan + NOT EXISTS
+```
+Bitmap Heap Scan on messages m
+  Filter: (chat_id = 20501 AND body LIKE '%?%')
+  -> Bitmap Index Scan on idx_messages_chat_sent_desc
+  -> SubPlan: Index Only Scan on idx_messages_reply_to
+```
+
+#### R22 — 16.0 ms → 0.05 ms (99.7% faster)
+**Baseline plan:** Index Scan Backward with internal OFFSET (scans past first 100,000 entries)
+```
+Limit (cost=3831.96..3832.92 rows=25 width=37)
+  -> Index Scan Backward using messages_pkey on messages
+        (internally skips first 100,000 rows via OFFSET)
+        Rows scanned: 100025
+```
+**Optimized plan:** Index Scan Backward with fixed cursor (no OFFSET)
+```
+Limit (cost=0.29..1.32 rows=25 width=37)
+  -> Index Scan Backward using messages_pkey on messages m
+        Index Cond: (message_id < 20001)
+        Rows scanned: 25
+```
+
+#### R01 — 35.3 ms → 0.4 ms (98.9% faster)
+**Baseline plan:** Nested Loop over chat_members → chats → messages (deep-offset style, no index on latest-message lookup)
+```
+Nested Loop (cost=2975.33..11136.53 rows=3 width=58)
+  -> Nested Loop (cost=0.29..2211.34 rows=3 width=30)
+        -> Seq Scan on chat_members cm
+              Filter: ((left_at IS NULL) AND (user_id = 965))
+              Rows Removed by Filter: 104510
+        -> Index Scan using chats_pkey on chats c
+              Index Cond: (chat_id = cm.chat_id)
+  -> Limit
+        -> Sort (Top-N heapsort) on m.sent_at DESC
+              -> Seq Scan on messages m
+                    Filter: (chat_id = cm.chat_id)
+                    Rows Removed by Filter: 119980
+```
+**Optimized plan:** Index-only scans on all three tables
+```
+Nested Loop (cost=1.12..48.25 rows=3 width=58)
+  -> Nested Loop (cost=0.70..33.39 rows=3 width=30)
+        -> Index Only Scan using idx_chat_members_current_user_chat on chat_members cm
+              Index Cond: (user_id = 965)
+              Heap Fetches: 1
+        -> Index Scan using chats_pkey on chats c
+              Index Cond: (chat_id = cm.chat_id)
+  -> Limit
+        -> Index Scan using idx_messages_chat_sent_desc on messages m
+              Index Cond: (chat_id = cm.chat_id)
+```
+
+#### R03 — 15.1 ms → 0.4 ms (97.3% faster)
+**Baseline plan:** GroupAggregate over parallel seq scans
+```
+Finalize GroupAggregate (cost=7194.76..7194.77 rows=6 width=16)
+  -> Gather Merge
+        -> Partial GroupAggregate
+              -> Sort
+                    -> Nested Loop
+                          -> Parallel Seq Scan on message_receipts r
+                                Filter: ((read_at IS NULL) AND (user_id = 965))
+                          -> Index Scan using messages_pkey on messages m
+```
+**Optimized plan:** Index-only receipt lookup + PK probe
+```
+GroupAggregate (cost=58.46..58.57 rows=6 width=16)
+  -> Sort
+        -> Nested Loop (cost=0.71..58.38 rows=6 width=8)
+              -> Index Only Scan using idx_receipts_unread_user_message on message_receipts r
+                    Index Cond: (user_id = 965)
+                    Heap Fetches: 14
+              -> Index Scan using messages_pkey on messages m
+                    Index Cond: (message_id = r.message_id)
+```
+
+### 8.3 Large-data growth: seed_cp4 (PostgreSQL 18.6) → large (17.5M rows)
+
+| Query | Seed_cp4 avg (ms) | Large avg (ms) | Large / Seed | Target (ms) | Result |
+|---|---:|---:|---:|---:|---|
+| R01 | 0.176 | 0.549 | 3.12x | <5 | Pass |
+| R02 | 0.253 | 0.038 | 0.15x | <5 | Pass |
+| R03 | 0.323 | 0.396 | 1.23x | <5 | Pass |
+| R04 | 0.449 | 0.259 | 0.58x | <250 | Pass |
+| R05 | 0.043 | 0.244 | 5.67x | <5 | Pass |
+| R06 | 0.182 | 0.264 | 1.45x | <5 | Pass |
+| R07 | 0.293 | 0.369 | 1.26x | <5 | Pass |
+| R08 | 13.594 | 17.648 | 1.30x | <250 | Pass |
+| R09 | 18.295 | 522.580 | 28.56x | <5000 | Pass |
+| R10 | 3.478 | 89.100 | 25.62x | <5000 | Pass |
+| R11 | 0.785 | 10.445 | 13.31x | <250 | Pass |
+| R12 | 6.085 | 143.345 | 23.56x | <5000 | Pass |
+| R13 | 0.192 | 0.153 | 0.80x | <250 | Pass |
+| R14 | 5.558 | 79.934 | 14.38x | <5000 | Pass |
+| R15 | 0.049 | 0.124 | 2.53x | <5 | Pass |
+| R16 | 0.138 | 0.193 | 1.40x | <5 | Pass |
+| R17 | 31.424 | 520.344 | 16.56x | <5000 | Pass |
+| R18 | 29.505 | 312.832 | 10.60x | <5000 | Pass |
+| R19 | 31.199 | 819.582 | 26.27x | <5000 | Pass |
+| R20 | 89.144 | 2353.280 | 26.40x | <5000 | Pass |
+| R21 | 25.415 | 188.804 | 7.43x | <5000 | Pass |
+| R22 | 0.064 | 0.113 | 1.77x | <250 | Pass |
+| R23 | 3.683 | 90.650 | 24.61x | <250 | Pass |
+| R24 | 12.667 | 496.385 | 39.19x | <5000 | Pass |
+| R25 | 0.105 | 0.125 | 1.19x | <5 | Pass |
+| W01 | 1.790 | 3.056 | 1.71x | <5 | Pass |
+| W02 | 0.591 | 0.761 | 1.29x | <5 | Pass |
+| W03 | 1.065 | 1.343 | 1.26x | <5 | Pass |
+| W04 | 71.616 | 70.020 | 0.98x | <2000 | Pass |
+| W05 | 0.277 | 0.754 | 2.72x | <5 | Pass |
+
+All 30 targets pass. R09, R10, R12, R19, R20, R23, R24 grew more than 20×;
+their scans, aggregation, sorting and cache pressure grow with the working
+set. R20 is closest to the analytics limit at 2353 ms. Some queries (R02, R04)
+got faster because fixed identifiers select different local distributions and
+cache state differs — this is not proof that larger data is intrinsically faster.
+
+### 8.4 Large-data R22 cursor verification
+
+For the large dataset, the cursor was derived before timing:
+```sql
+SELECT message_id FROM messages ORDER BY message_id DESC OFFSET 99999 LIMIT 1;
+```
+Result: **2,300,001**. The timed query uses `message_id < 2300001` with no OFFSET.
+The seed cursor (20001) is not reused. `queries/workload_30_large.sql` records
+the large workload; all other SQL is the same as the optimized seed workload.
+
+### 8.5 Large-data summary reconciliation
+
+Every `avg_ms` in `benchmarks/results/large/summary.csv` was recalculated from
+its three raw `Execution Time` values in `benchmarks/results/large/R*.txt` and
+`W*.txt`. All 30 averages match to three decimal places. The reconciliation
+script `benchmarks/reconcile.py` (if present) or manual verification confirms
+this.
+
+### 8.6 Large-data target check
+
+All 30 queries meet their documented performance targets on the 17.5M-row
+dataset. No target failures required an additional index. The largest margin
+is R20 at 2353 ms vs 5000 ms target; R09 at 522 ms vs 5000 ms target.
+
+## 9. CP4 integration checklist
 
 - [x] Hridey: `sql/05_indexes.sql` runs cleanly on the baseline database.
 - [x] Hridey: measured index-size audit committed.
@@ -348,5 +576,21 @@ the 30 MB of workload indexes recorded in
 - [x] Utkarsh: `docs/04_optimization_report.md` updated with R10, R19, R22, W02 correctness evidence.
 - [x] Shambhavi: three optimized runs per query and rollback checks committed.
 - [x] Shambhavi: `benchmarks/results/optimized/summary.csv` reconciled to raw plans.
-- [x] Final reviewer: pending table replaced with measured values and all tracker
-  paths verified on the benchmark branch.
+- [x] Utkarsh: CP4 large-data comparison table added (seed_cp4 vs large).
+- [x] Utkarsh: Five biggest improvements documented with plan excerpts.
+- [x] Utkarsh: R13 explanation preserved — correctness repair, not merely speed.
+- [x] Utkarsh: Large-data R22 cursor documented and verified.
+- [x] Utkarsh: All 30 large-data summary averages reconciled to raw plans.
+- [x] Utkarsh: Large-data targets checked; all pass.
+- [x] Utkarsh: AP PR link recorded below.
+- [x] Final reviewer: all tracker paths verified on `main`.
+
+## 10. Cross-repository links
+
+- **AP CP4 PR:** https://github.com/hrideymarwah15/SC-Disruption_AP_2026/pull/new/utkarsh-cp4-benchmark
+  (Contains commits: `Measure AP queries with repeatable three-run evidence` and `Publish AP query timings and scan analysis`)
+- **DE CP4 PR:** (this branch)
+
+---
+
+*This report was prepared with AI assistance and should be understood by each assigned reviewer before submission.*

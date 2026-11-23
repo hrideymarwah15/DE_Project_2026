@@ -29,12 +29,12 @@ AI-assisted changes before the individual analysis.
 - [x] DE: Final validation document created at `docs/08_final_validation.md`
 - [x] AP: 33-query catalogue committed (`dbms/04_queries.sql`)
 - [x] AP: Benchmark infrastructure committed (`dbms/fixture_data.sql`, `dbms/run_benchmark.py`)
-- [x] AP: Timing report template committed (`dbms/05_query_timings.md`)
+- [x] AP: Measured timing report committed (`dbms/05_query_timings.md`)
 - [x] AP: Two commits on branch `utkarsh-cp4-benchmark`:
   - `Measure AP queries with repeatable three-run evidence`
   - `Publish AP query timings and scan analysis`
-- [x] AP compare URL: https://github.com/hrideymarwah15/SC-Disruption_AP_2026/compare/main...utkarsh-cp4-benchmark (PR to be created)
-- [x] DE compare URL: https://github.com/hrideymarwah15/DE_Project_2026/compare/main...utkarsh-cp4-final-audit (PR to be created)
-- [x] Both branches pushed; neither PR created yet; neither merged; AP CP4 not marked complete on main
+- [x] AP PR: https://github.com/hrideymarwah15/SC-Disruption_AP_2026/pull/3
+- [x] DE PR: https://github.com/hrideymarwah15/DE_Project_2026/pull/5
+- [x] Both PRs opened. Branch evidence does not count as merged evidence; verify GitHub main before marking submission complete.
 
-**Note:** AP CP4 not marked complete on main — `dbms/05_query_timings.md` and raw plans exist on AP PR branch only; will be on main after AP PR merge.
+**Verified update (23 November 2026):** AP PR #3 merged with merge commit `3966ba9dcad53f3fff83616f0d55adae2c38bf32`. Aaditi’s correction `cdfc0b2` fixes rollback verification and prevents the shell runner from dropping existing databases. Utkarsh’s original commits remain in history. DE PR #5 is the remaining merge for this audit.

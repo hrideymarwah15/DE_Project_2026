@@ -381,120 +381,189 @@ microbenchmarks, not concurrent-user or cold-cache guarantees.
 
 Diagnostic sum (30 queries): baseline 34,038.790 ms → optimized 367.835 ms (92.5x lower).
 
-### 8.2 Five biggest improvements — before/after plan excerpts
+### 8.2 Five largest measured seed improvements — actual first-run plans
 
-#### R19 — 33,492.8 ms → 31.4 ms (99.9% faster)
-**Baseline plan:** Seq Scan on chats with 2× correlated subqueries (Aggregate over Seq Scan on messages per group)
-```
-Sort (cost=18750764.26.. rows=3000 width=40)
-  -> Seq Scan on chats c
-        Filter: (chat_type = 'GROUP')
+The excerpts below copy the first committed run verbatim, omitting only buffer, planning and execution summaries. Three-run averages remain in Section 8.1. R13 also repairs a NULL-sensitive result defect.
+
+
+#### R19
+
+
+**Baseline** — source: `benchmarks/results/baseline/R19.txt`, run 1.
+```text
+Sort  (cost=18750764.26..18750771.76 rows=3000 width=40) (actual time=33399.166..33399.439 rows=3000 loops=1)
+  Sort Key: ((SubPlan 1)) DESC NULLS LAST
+  Sort Method: quicksort  Memory: 342kB
+  ->  Seq Scan on chats c  (cost=0.00..18750591.00 rows=3000 width=40) (actual time=13.782..33397.504 rows=3000 loops=1)
+        Filter: (chat_type = 'GROUP'::text)
         Rows Removed by Filter: 20000
         SubPlan 1
-          -> Aggregate
-                -> Seq Scan on messages m
+          ->  Aggregate  (cost=2975.02..2975.03 rows=1 width=8) (actual time=5.299..5.299 rows=1 loops=3000)
+                ->  Seq Scan on messages m  (cost=0.00..2975.00 rows=8 width=8) (actual time=0.221..5.294 rows=24 loops=3000)
                       Filter: (chat_id = c.chat_id)
                       Rows Removed by Filter: 119976
         SubPlan 2
-          -> Aggregate
-                -> Seq Scan on messages m_1
-                      Filter: (chat_id = c.chat_id AND m.sent_at >= '2026-06-01')
+          ->  Aggregate  (cost=3275.00..3275.01 rows=1 width=8) (actual time=5.832..5.832 rows=1 loops=3000)
+                ->  Seq Scan on messages m_1  (cost=0.00..3275.00 rows=1 width=0) (actual time=5.668..5.829 rows=1 loops=3000)
+                      Filter: ((sent_at >= '2026-06-01 00:00:00+05:30'::timestamp with time zone) AND (chat_id = c.chat_id))
+                      Rows Removed by Filter: 119999
 ```
-**Optimized plan:** Single HashAggregate over messages + Hash Right Join
-```
-Sort (cost=4874.98.. rows=3000 width=40)
-  -> Hash Right Join (cost=4376.00..4701.72 rows=3000 width=40)
+
+
+**Optimized** — source: `benchmarks/results/optimized/R19.txt`, run 1.
+```text
+Sort  (cost=4874.98..4882.48 rows=3000 width=40) (actual time=30.969..31.098 rows=3000 loops=1)
+  Sort Key: (max(m.sent_at)) DESC NULLS LAST
+  Sort Method: quicksort  Memory: 342kB
+  ->  Hash Right Join  (cost=4376.00..4701.72 rows=3000 width=40) (actual time=26.774..30.302 rows=3000 loops=1)
         Hash Cond: (m.chat_id = c.chat_id)
-        -> HashAggregate (Group Key: m.chat_id)
-              -> Seq Scan on messages m
-        -> Hash
-              -> Seq Scan on chats c
-                    Filter: (chat_type = 'GROUP')
+        ->  HashAggregate  (cost=3875.00..4018.96 rows=14396 width=24) (actual time=24.884..26.705 rows=21164 loops=1)
+              Group Key: m.chat_id
+              Batches: 1  Memory Usage: 2833kB
+              ->  Seq Scan on messages m  (cost=0.00..2675.00 rows=120000 width=16) (actual time=0.004..6.175 rows=120000 loops=1)
+        ->  Hash  (cost=463.50..463.50 rows=3000 width=24) (actual time=1.878..1.879 rows=3000 loops=1)
+              Buckets: 4096  Batches: 1  Memory Usage: 198kB
+              ->  Seq Scan on chats c  (cost=0.00..463.50 rows=3000 width=24) (actual time=1.244..1.571 rows=3000 loops=1)
+                    Filter: (chat_type = 'GROUP'::text)
                     Rows Removed by Filter: 20000
 ```
 
-#### R13 — 41.1 ms → 0.3 ms (99.2% faster, result repaired)
-**Baseline plan:** Seq Scan + NOT IN subquery (NULL-sensitive, returns 0 rows)
-```
-Seq Scan on messages m
-  Filter: (chat_id = 20501 AND body LIKE '%?%' AND message_id NOT IN (SELECT reply_to_message_id FROM messages))
-```
-**Optimized plan:** Bitmap Heap Scan + NOT EXISTS
-```
-Bitmap Heap Scan on messages m
-  Filter: (chat_id = 20501 AND body LIKE '%?%')
-  -> Bitmap Index Scan on idx_messages_chat_sent_desc
-  -> SubPlan: Index Only Scan on idx_messages_reply_to
+
+#### R13
+
+
+**Baseline** — source: `benchmarks/results/baseline/R13.txt`, run 1.
+```text
+Seq Scan on messages m  (cost=2975.00..6550.00 rows=1 width=44) (actual time=40.739..40.740 rows=0 loops=1)
+  Filter: ((body ~~ '%?%'::text) AND (NOT (hashed SubPlan 1)) AND (chat_id = 20501))
+  Rows Removed by Filter: 120000
+  SubPlan 1
+    ->  Seq Scan on messages r  (cost=0.00..2675.00 rows=120000 width=8) (actual time=0.002..11.267 rows=120000 loops=1)
 ```
 
-#### R22 — 16.0 ms → 0.05 ms (99.7% faster)
-**Baseline plan:** Index Scan Backward with internal OFFSET (scans past first 100,000 entries)
+
+**Optimized** — source: `benchmarks/results/optimized/R13.txt`, run 1.
+```text
+Nested Loop Anti Join  (cost=4.76..53.45 rows=2 width=44) (actual time=0.114..0.291 rows=7 loops=1)
+  ->  Bitmap Heap Scan on messages m  (cost=4.48..34.83 rows=2 width=44) (actual time=0.089..0.203 rows=9 loops=1)
+        Recheck Cond: (chat_id = 20501)
+        Filter: (body ~~ '%?%'::text)
+        Rows Removed by Filter: 18
+        Heap Blocks: exact=27
+        ->  Bitmap Index Scan on idx_messages_chat_sent_desc  (cost=0.00..4.48 rows=8 width=0) (actual time=0.065..0.065 rows=27 loops=1)
+              Index Cond: (chat_id = 20501)
+  ->  Index Only Scan using idx_messages_reply_to on messages r  (cost=0.29..6.30 rows=1 width=8) (actual time=0.009..0.009 rows=0 loops=9)
+        Index Cond: (reply_to_message_id = m.message_id)
+        Heap Fetches: 0
 ```
-Limit (cost=3831.96..3832.92 rows=25 width=37)
-  -> Index Scan Backward using messages_pkey on messages
-        (internally skips first 100,000 rows via OFFSET)
-        Rows scanned: 100025
+
+
+#### R22
+
+
+**Baseline** — source: `benchmarks/results/baseline/R22.txt`, run 1.
+```text
+Limit  (cost=3831.96..3832.92 rows=25 width=37) (actual time=15.726..15.732 rows=25 loops=1)
+  ->  Index Scan Backward using messages_pkey on messages  (cost=0.29..4598.29 rows=120000 width=37) (actual time=0.017..12.414 rows=100025 loops=1)
 ```
-**Optimized plan:** Index Scan Backward with fixed cursor (no OFFSET)
-```
-Limit (cost=0.29..1.32 rows=25 width=37)
-  -> Index Scan Backward using messages_pkey on messages m
+
+
+**Optimized** — source: `benchmarks/results/optimized/R22.txt`, run 1.
+```text
+Limit  (cost=0.29..1.32 rows=25 width=37) (actual time=0.022..0.027 rows=25 loops=1)
+  ->  Index Scan Backward using messages_pkey on messages m  (cost=0.29..827.08 rows=20102 width=37) (actual time=0.021..0.024 rows=25 loops=1)
         Index Cond: (message_id < 20001)
-        Rows scanned: 25
 ```
 
-#### R01 — 35.3 ms → 0.4 ms (98.9% faster)
-**Baseline plan:** Nested Loop over chat_members → chats → messages (deep-offset style, no index on latest-message lookup)
-```
-Nested Loop (cost=2975.33..11136.53 rows=3 width=58)
-  -> Nested Loop (cost=0.29..2211.34 rows=3 width=30)
-        -> Seq Scan on chat_members cm
-              Filter: ((left_at IS NULL) AND (user_id = 965))
-              Rows Removed by Filter: 104510
-        -> Index Scan using chats_pkey on chats c
-              Index Cond: (chat_id = cm.chat_id)
-  -> Limit
-        -> Sort (Top-N heapsort) on m.sent_at DESC
-              -> Seq Scan on messages m
-                    Filter: (chat_id = cm.chat_id)
-                    Rows Removed by Filter: 119980
-```
-**Optimized plan:** Index-only scans on all three tables
-```
-Nested Loop (cost=1.12..48.25 rows=3 width=58)
-  -> Nested Loop (cost=0.70..33.39 rows=3 width=30)
-        -> Index Only Scan using idx_chat_members_current_user_chat on chat_members cm
-              Index Cond: (user_id = 965)
-              Heap Fetches: 1
-        -> Index Scan using chats_pkey on chats c
-              Index Cond: (chat_id = cm.chat_id)
-  -> Limit
-        -> Index Scan using idx_messages_chat_sent_desc on messages m
-              Index Cond: (chat_id = cm.chat_id)
+
+#### R01
+
+
+**Baseline** — source: `benchmarks/results/baseline/R01.txt`, run 1.
+```text
+Sort  (cost=11136.55..11136.56 rows=3 width=58) (actual time=44.799..44.800 rows=4 loops=1)
+  Sort Key: m.sent_at DESC
+  Sort Method: quicksort  Memory: 25kB
+  ->  Nested Loop  (cost=2975.33..11136.53 rows=3 width=58) (actual time=19.876..44.736 rows=4 loops=1)
+        ->  Nested Loop  (cost=0.29..2211.34 rows=3 width=30) (actual time=7.263..12.819 rows=4 loops=1)
+              ->  Seq Scan on chat_members cm  (cost=0.00..2186.43 rows=3 width=8) (actual time=7.235..12.716 rows=4 loops=1)
+                    Filter: ((left_at IS NULL) AND (user_id = 965))
+                    Rows Removed by Filter: 104510
+              ->  Index Scan using chats_pkey on chats c  (cost=0.29..8.30 rows=1 width=30) (actual time=0.020..0.020 rows=1 loops=4)
+                    Index Cond: (chat_id = cm.chat_id)
+        ->  Limit  (cost=2975.04..2975.04 rows=1 width=28) (actual time=7.975..7.975 rows=1 loops=4)
+              ->  Sort  (cost=2975.04..2975.06 rows=8 width=28) (actual time=7.971..7.971 rows=1 loops=4)
+                    Sort Key: m.sent_at DESC
+                    Sort Method: top-N heapsort  Memory: 25kB
+                    ->  Seq Scan on messages m  (cost=0.00..2975.00 rows=8 width=28) (actual time=1.198..7.949 rows=20 loops=4)
+                          Filter: (chat_id = cm.chat_id)
+                          Rows Removed by Filter: 119980
 ```
 
-#### R03 — 15.1 ms → 0.4 ms (97.3% faster)
-**Baseline plan:** GroupAggregate over parallel seq scans
-```
-Finalize GroupAggregate (cost=7194.76..7194.77 rows=6 width=16)
-  -> Gather Merge
-        -> Partial GroupAggregate
-              -> Sort
-                    -> Nested Loop
-                          -> Parallel Seq Scan on message_receipts r
-                                Filter: ((read_at IS NULL) AND (user_id = 965))
-                          -> Index Scan using messages_pkey on messages m
-```
-**Optimized plan:** Index-only receipt lookup + PK probe
-```
-GroupAggregate (cost=58.46..58.57 rows=6 width=16)
-  -> Sort
-        -> Nested Loop (cost=0.71..58.38 rows=6 width=8)
-              -> Index Only Scan using idx_receipts_unread_user_message on message_receipts r
+
+**Optimized** — source: `benchmarks/results/optimized/R01.txt`, run 1.
+```text
+Sort  (cost=48.27..48.28 rows=3 width=58) (actual time=0.350..0.352 rows=4 loops=1)
+  Sort Key: m.sent_at DESC
+  Sort Method: quicksort  Memory: 25kB
+  ->  Nested Loop  (cost=1.12..48.25 rows=3 width=58) (actual time=0.153..0.301 rows=4 loops=1)
+        ->  Nested Loop  (cost=0.70..33.39 rows=3 width=30) (actual time=0.100..0.168 rows=4 loops=1)
+              ->  Index Only Scan using idx_chat_members_current_user_chat on chat_members cm  (cost=0.42..8.47 rows=3 width=8) (actual time=0.075..0.088 rows=4 loops=1)
                     Index Cond: (user_id = 965)
-                    Heap Fetches: 14
-              -> Index Scan using messages_pkey on messages m
-                    Index Cond: (message_id = r.message_id)
+                    Heap Fetches: 1
+              ->  Index Scan using chats_pkey on chats c  (cost=0.29..8.30 rows=1 width=30) (actual time=0.018..0.018 rows=1 loops=4)
+                    Index Cond: (chat_id = cm.chat_id)
+        ->  Limit  (cost=0.42..4.93 rows=1 width=28) (actual time=0.032..0.032 rows=1 loops=4)
+              ->  Index Scan using idx_messages_chat_sent_desc on messages m  (cost=0.42..36.56 rows=8 width=28) (actual time=0.031..0.031 rows=1 loops=4)
+                    Index Cond: (chat_id = cm.chat_id)
+```
+
+
+#### R03
+
+
+**Baseline** — source: `benchmarks/results/baseline/R03.txt`, run 1.
+```text
+Sort  (cost=7194.76..7194.77 rows=6 width=16) (actual time=14.135..15.654 rows=2 loops=1)
+  Sort Key: (count(*)) DESC
+  Sort Method: quicksort  Memory: 25kB
+  ->  Finalize GroupAggregate  (cost=7194.10..7194.68 rows=6 width=16) (actual time=14.125..15.644 rows=2 loops=1)
+        Group Key: m.chat_id
+        ->  Gather Merge  (cost=7194.10..7194.60 rows=4 width=16) (actual time=14.120..15.641 rows=5 loops=1)
+              Workers Planned: 2
+              Workers Launched: 2
+              ->  Partial GroupAggregate  (cost=6194.08..6194.11 rows=2 width=16) (actual time=11.241..11.243 rows=2 loops=3)
+                    Group Key: m.chat_id
+                    ->  Sort  (cost=6194.08..6194.08 rows=2 width=8) (actual time=11.232..11.232 rows=5 loops=3)
+                          Sort Key: m.chat_id
+                          Sort Method: quicksort  Memory: 25kB
+                          Worker 0:  Sort Method: quicksort  Memory: 25kB
+                          Worker 1:  Sort Method: quicksort  Memory: 25kB
+                          ->  Nested Loop  (cost=0.29..6194.07 rows=2 width=8) (actual time=1.102..11.210 rows=5 loops=3)
+                                ->  Parallel Seq Scan on message_receipts r  (cost=0.00..6177.45 rows=2 width=8) (actual time=1.086..11.151 rows=5 loops=3)
+                                      Filter: ((read_at IS NULL) AND (user_id = 965))
+                                      Rows Removed by Filter: 167191
+                                ->  Index Scan using messages_pkey on messages m  (cost=0.29..8.31 rows=1 width=16) (actual time=0.010..0.010 rows=1 loops=16)
+                                      Index Cond: (message_id = r.message_id)
+```
+
+
+**Optimized** — source: `benchmarks/results/optimized/R03.txt`, run 1.
+```text
+Sort  (cost=58.64..58.66 rows=6 width=16) (actual time=0.357..0.357 rows=2 loops=1)
+  Sort Key: (count(*)) DESC
+  Sort Method: quicksort  Memory: 25kB
+  ->  GroupAggregate  (cost=58.46..58.57 rows=6 width=16) (actual time=0.331..0.333 rows=2 loops=1)
+        Group Key: m.chat_id
+        ->  Sort  (cost=58.46..58.48 rows=6 width=8) (actual time=0.321..0.323 rows=16 loops=1)
+              Sort Key: m.chat_id
+              Sort Method: quicksort  Memory: 25kB
+              ->  Nested Loop  (cost=0.71..58.38 rows=6 width=8) (actual time=0.062..0.314 rows=16 loops=1)
+                    ->  Index Only Scan using idx_receipts_unread_user_message on message_receipts r  (cost=0.42..8.52 rows=6 width=8) (actual time=0.045..0.106 rows=16 loops=1)
+                          Index Cond: (user_id = 965)
+                          Heap Fetches: 14
+                    ->  Index Scan using messages_pkey on messages m  (cost=0.29..8.31 rows=1 width=16) (actual time=0.013..0.013 rows=1 loops=16)
+                          Index Cond: (message_id = r.message_id)
 ```
 
 ### 8.3 Large-data growth: seed_cp4 (PostgreSQL 18.6) → large (17.5M rows)
@@ -559,7 +628,7 @@ this.
 ### 8.6 Large-data target check
 
 All 30 queries meet their documented performance targets on the 17.5M-row
-dataset. No target failures required an additional index. The largest margin
+dataset. No target failures required an additional index. The highest measured runtime
 is R20 at 2353 ms vs 5000 ms target; R09 at 522 ms vs 5000 ms target.
 
 ## 9. CP4 integration checklist
@@ -587,9 +656,9 @@ is R20 at 2353 ms vs 5000 ms target; R09 at 522 ms vs 5000 ms target.
 
 ## 10. Cross-repository links
 
-- **AP CP4 PR:** https://github.com/hrideymarwah15/SC-Disruption_AP_2026/pull/new/utkarsh-cp4-benchmark
+- **AP CP4 PR:** https://github.com/hrideymarwah15/SC-Disruption_AP_2026/pull/3
   (Contains commits: `Measure AP queries with repeatable three-run evidence` and `Publish AP query timings and scan analysis`)
-- **DE CP4 PR:** (this branch)
+- **DE CP4 PR:** https://github.com/hrideymarwah15/DE_Project_2026/pull/5
 
 ---
 

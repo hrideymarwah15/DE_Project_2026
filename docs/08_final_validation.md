@@ -21,11 +21,10 @@
 | R19   | 33,492.8 ms | 31.4 ms | 2 correlated subqueries → 1 grouped HashAggregate |
 | R13   | 41.1 ms | 0.3 ms | NOT IN → NOT EXISTS anti-join + partial index |
 | R22   | 16.0 ms | 0.05 ms | Index Scan Backward with OFFSET → Index Scan Backward with fixed cursor |
-| R01   | 35.3 ms | 0.4 ms | 2× Seq Scan + HashAggregate → Index Only Scan + Index Scan + Index Scan |
-| R03   | 15.1 ms | 0.4 ms | Parallel Seq Scan + Hash Join → Index Only Scan + PK Scan |
+| R01   | 35.3 ms | 0.4 ms | Nested Loop with sequential membership/message scans → indexed membership and latest-message lookup |
+| R03   | 15.1 ms | 0.4 ms | Parallel Seq Scan + Nested Loop → Index Only Scan + PK Scan |
 
-Plan excerpts captured in Section 8.2 of optimization report. All excerpts verified
-against committed raw plans; no operators invented.
+Plan excerpts captured in Section 8.2 of optimization report. Excerpts are copied from committed first-run raw plans; buffer and planning summaries are omitted.
 
 ### 1.3 Write safety
 - ✅ All W01–W05 wrapped in `BEGIN` / `ROLLBACK` in benchmark runner
@@ -165,3 +164,17 @@ Email: jainutkarsh986@gmail.com
 ---
 
 *Final audit complete. Both PR compare URLs prepared; no merges performed by auditor.*
+## Final reviewer correction
+
+Hridey replaced Section 8.2 of the optimization report with actual first-run
+plan excerpts and reconciled all 30 averages in each of baseline, optimized,
+seed_cp4 and large against three raw Execution Time values (120 averages).
+R13 uses a Nested Loop Anti Join; R01 combines an index-only membership scan
+with ordinary index scans. The application and WhatsApp database remain distinct.
+
+AP PR #3 merged at `3966ba9dcad53f3fff83616f0d55adae2c38bf32`, preserving
+Utkarsh’s commits and adding Aaditi’s benchmark correction `cdfc0b2`. The
+corrected runner compares complete application row contents after every write,
+fails on snapshot errors and never drops an existing database through its wrapper.
+Its additional verification ran on PostgreSQL 15.18; the earlier committed AP
+timing table is labelled PostgreSQL 18.6 and was not replaced by this check.
